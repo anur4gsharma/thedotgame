@@ -13,6 +13,7 @@ interface ConnectionState {
   playerName: string;
   roomCode: string | null;
   lastActivity: number;
+  moveTimestamps: number[];
 }
 
 // ─── WebSocket Server ───────────────────────────────────
@@ -74,6 +75,7 @@ export function createWsServer(roomManager: RoomManager) {
 
         state.roomCode = room.code;
         state.playerName = msg.playerName;
+        room.players.get(state.playerId)!.ws = ws;
 
         send(ws, {
           type: "game_created",
@@ -138,6 +140,14 @@ export function createWsServer(roomManager: RoomManager) {
           return;
         }
 
+        const now = Date.now();
+        state.moveTimestamps = state.moveTimestamps.filter(t => now - t < 1000);
+        if (state.moveTimestamps.length >= config.maxMovesPerSecond) {
+          send(ws, { type: "error", code: "RATE_LIMITED", message: "Too many moves" });
+          return;
+        }
+        state.moveTimestamps.push(now);
+
         const result = roomManager.makeMove(state.roomCode, state.playerId, msg.edgeId);
 
         if (result.error) {
@@ -176,6 +186,30 @@ export function createWsServer(roomManager: RoomManager) {
         break;
       }
 
+      case "reconnect": {
+        const result = roomManager.joinRoom(msg.roomCode.toUpperCase(), msg.playerId, state.playerName, ws);
+        if (result.error || !result.room) {
+          send(ws, { type: "error", code: "JOIN_FAILED", message: result.error || "Failed" });
+          return;
+        }
+        
+        state.playerId = msg.playerId;
+        state.roomCode = result.room.code;
+        state.playerName = result.player.playerName;
+
+        const lobbyState = buildLobbyState(result.room);
+        const lobbyPlayer = { id: result.player.playerId, name: result.player.playerName, color: result.player.color, rating: result.player.rating, connected: result.player.connected };
+        
+        send(ws, { type: "player_joined", player: lobbyPlayer, state: lobbyState });
+        
+        if (result.room.status === "playing" && result.room.gameState) {
+          send(ws, { type: "game_started", state: GameEngine.serialize(result.room.gameState) });
+        }
+        
+        broadcast(result.room.code, { type: "player_joined", player: lobbyPlayer, state: lobbyState }, ws);
+        break;
+      }
+
       case "ping": {
         send(ws, { type: "pong", timestamp: msg.timestamp });
         break;
@@ -203,6 +237,7 @@ export function createWsServer(roomManager: RoomManager) {
       playerName: "Player",
       roomCode: null,
       lastActivity: Date.now(),
+      moveTimestamps: [],
     };
 
     connections.set(ws, state);

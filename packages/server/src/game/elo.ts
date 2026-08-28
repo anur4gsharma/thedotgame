@@ -46,7 +46,7 @@ function expectedScore(ratingA: number, ratingB: number): number {
 export function updateRatings(
   ratings: Map<string, PlayerRating>,
   scores: Map<string, number>,
-  K: number = DEFAULT_RATING,
+  K: number = 32,
 ): Map<string, PlayerRating> {
   const playerIds = Array.from(scores.keys());
 

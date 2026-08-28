@@ -311,8 +311,43 @@ export const useGameStore = create<GameStore>((set, get) => ({
         break;
       }
 
+      case "state_sync": {
+        const board = AVAILABLE_BOARDS.find((b) => b.id === msg.state.boardId);
+        if (!board) break;
+        const runtime = buildBoardRuntime(board);
+        const gameState = GameEngine.deserialize(msg.state);
+        set({
+          board,
+          runtime,
+          state: gameState,
+          phase: gameState.status === "completed" ? "gameover" : "playing",
+        });
+        break;
+      }
+
+      case "player_reconnected": {
+        set((s) => {
+          if (!s.state) return s;
+          const players = s.state.players.map((p) =>
+            p.id === msg.playerId ? { ...p, connected: true } : p
+          );
+          return { state: { ...s.state, players } };
+        });
+        break;
+      }
+
       case "player_left": {
-        // Could show a notification
+        set((s) => {
+          if (!s.state) return s;
+          const players = s.state.players.map((p) =>
+            p.id === msg.playerId ? { ...p, connected: false } : p
+          );
+          return { state: { ...s.state, players } };
+        });
+        break;
+      }
+
+      case "pong": {
         break;
       }
 

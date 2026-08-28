@@ -39,3 +39,18 @@ httpServer.listen(config.port, config.host, () => {
   console.log(`\n  ⚫ Dots server running on ws://${config.host}:${config.port}\n`);
   console.log(`  Health: http://localhost:${config.port}/health\n`);
 });
+
+const shutdown = () => {
+  console.log("\nShutting down gracefully...");
+  for (const client of wss.clients) {
+    client.terminate();
+  }
+  wss.close(() => {
+    httpServer.close(() => {
+      process.exit(0);
+    });
+  });
+};
+
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);

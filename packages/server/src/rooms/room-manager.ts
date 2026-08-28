@@ -18,6 +18,7 @@ export interface Room {
   ratings: Map<string, PlayerRating>;
   createdAt: number;
   lastActivity: number;
+  ip: string;
 }
 
 export interface PlayerSession {
@@ -86,11 +87,13 @@ export class RoomManager {
       ratings: new Map(),
       createdAt: now,
       lastActivity: now,
+      ip,
     };
 
     // Get or create host rating
     const hostRating = this.ratings.get(hostId) || createRating();
     this.ratings.set(hostId, hostRating);
+    room.ratings.set(hostId, hostRating);
 
     // Add host as first player
     const hostColor = "blue" as const;
@@ -124,14 +127,6 @@ export class RoomManager {
       return { room: null as any, player: null as any, error: "Room not found." };
     }
 
-    if (room.status !== "lobby") {
-      return { room: null as any, player: null as any, error: "Game already in progress." };
-    }
-
-    if (room.players.size >= room.maxPlayers) {
-      return { room: null as any, player: null as any, error: "Room is full." };
-    }
-
     if (room.players.has(playerId)) {
       // Reconnection
       const existing = room.players.get(playerId)!;
@@ -141,9 +136,18 @@ export class RoomManager {
       return { room, player: existing };
     }
 
+    if (room.status !== "lobby") {
+      return { room: null as any, player: null as any, error: "Game already in progress." };
+    }
+
+    if (room.players.size >= room.maxPlayers) {
+      return { room: null as any, player: null as any, error: "Room is full." };
+    }
+
     // Get or create rating
     const rating = this.ratings.get(playerId) || createRating();
     this.ratings.set(playerId, rating);
+    room.ratings.set(playerId, rating);
 
     // Assign color
     const usedColors = new Set(Array.from(room.players.values()).map((p) => p.color));
@@ -280,6 +284,12 @@ export class RoomManager {
 
     // If room is empty, remove it
     if (room.players.size === 0) {
+      const ipCount = this.ipRoomCount.get(room.ip) || 0;
+      if (ipCount <= 1) {
+        this.ipRoomCount.delete(room.ip);
+      } else {
+        this.ipRoomCount.set(room.ip, ipCount - 1);
+      }
       this.rooms.delete(roomCode);
       return null;
     }
@@ -347,6 +357,12 @@ export class RoomManager {
             player.ws.close(1000, "Room expired");
           }
           this.playerToRoom.delete(player.playerId);
+        }
+        const ipCount = this.ipRoomCount.get(room.ip) || 0;
+        if (ipCount <= 1) {
+          this.ipRoomCount.delete(room.ip);
+        } else {
+          this.ipRoomCount.set(room.ip, ipCount - 1);
         }
         this.rooms.delete(code);
       }

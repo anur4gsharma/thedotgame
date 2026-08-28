@@ -114,9 +114,8 @@ export function BoardRenderer({ board }: BoardRendererProps) {
 
   // Drag start on vertex
   const handleVertexPointerDown = useCallback(
-    (vertexId: string, e: React.PointerEvent) => {
+    (vertexId: string, _e: React.PointerEvent) => {
       if (!state) return;
-      (e.target as Element).setPointerCapture(e.pointerId);
       setDragVertex(vertexId);
       setDragOverVertex(null);
     },
@@ -168,6 +167,7 @@ export function BoardRenderer({ board }: BoardRendererProps) {
       viewBox={viewBox}
       preserveAspectRatio="xMidYMid meet"
       onPointerUp={handlePointerUp}
+      style={{ touchAction: "none" }}
     >
       {/* Completed cells */}
       {board.cells.map((cell) => {
@@ -232,6 +232,7 @@ export function BoardRenderer({ board }: BoardRendererProps) {
           let strokeColor = "var(--edge-default)";
           let strokeWidth = 0.012;
           let opacity = 1;
+          let edgeClass = styles.edge;
 
           if (isClaimed && owner) {
             strokeColor = PLAYER_COLORS[owner.color];
@@ -240,6 +241,7 @@ export function BoardRenderer({ board }: BoardRendererProps) {
             strokeColor = currentColor;
             strokeWidth = 0.02;
             opacity = 0.6;
+            edgeClass = `${styles.edge} ${styles.edgePending || "edgePending"}`;
           } else if (isHovered) {
             strokeColor = "var(--edge-hover)";
             strokeWidth = 0.016;
@@ -278,7 +280,7 @@ export function BoardRenderer({ board }: BoardRendererProps) {
                 strokeWidth={strokeWidth}
                 opacity={opacity}
                 strokeLinecap="round"
-                className={styles.edge}
+                className={edgeClass}
                 pointerEvents="none"
               />
             </g>

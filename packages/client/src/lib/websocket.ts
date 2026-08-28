@@ -10,6 +10,7 @@ export class GameSocket {
   private maxReconnectAttempts = 10;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private _connected = false;
+  private messageQueue: ClientMessage[] = [];
 
   constructor(url: string) {
     this.url = url;
@@ -27,6 +28,10 @@ export class GameSocket {
     this.ws.onopen = () => {
       this._connected = true;
       this.reconnectAttempts = 0;
+      while (this.messageQueue.length > 0) {
+        const msg = this.messageQueue.shift();
+        if (msg) this.ws?.send(JSON.stringify(msg));
+      }
     };
 
     this.ws.onmessage = (event) => {
@@ -53,8 +58,10 @@ export class GameSocket {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
     }
-    this.maxReconnectAttempts = 0;
     if (this.ws) {
+      if (this.ws.readyState === WebSocket.OPEN) {
+        this.ws.send(JSON.stringify({ type: "leave_game" }));
+      }
       this.ws.close();
       this.ws = null;
     }
@@ -63,6 +70,8 @@ export class GameSocket {
   send(msg: ClientMessage) {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(msg));
+    } else {
+      this.messageQueue.push(msg);
     }
   }
 
