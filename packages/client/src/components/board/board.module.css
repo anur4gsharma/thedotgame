@@ -2,6 +2,18 @@
   width: 100%;
   height: 100%;
   display: block;
+  animation: boardIn 400ms var(--ease-out);
+}
+
+@keyframes boardIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 /* Edge transitions */
@@ -16,6 +28,12 @@
 .hitArea {
   cursor: pointer;
   outline: none;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.hitArea:hover ~ .edge {
+  stroke: var(--edge-hover);
+  stroke-width: 0.016;
 }
 
 .hitArea:focus-visible {
@@ -45,4 +63,14 @@
   transition:
     r var(--duration-normal) var(--ease-out),
     fill var(--duration-normal) var(--ease-out);
+}
+
+/* Pending edge shimmer */
+@keyframes shimmer {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 0.4; }
+}
+
+.edgePending {
+  animation: shimmer 1s ease-in-out infinite;
 }
