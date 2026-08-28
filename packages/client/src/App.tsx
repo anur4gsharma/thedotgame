@@ -3,6 +3,7 @@ import { MainMenu } from "./components/menu/MainMenu";
 import { BoardRenderer } from "./components/board/BoardRenderer";
 import { GameHUD } from "./components/game/GameHUD";
 import { GameOverModal } from "./components/game/GameOverModal";
+import { Lobby } from "./components/lobby/Lobby";
 import { ThemeToggle } from "./components/ui/ThemeToggle";
 import styles from "./App.module.css";
 
@@ -16,18 +17,13 @@ export function App() {
 
       {phase === "menu" && <MainMenu />}
 
-      {phase === "playing" && board && (
-        <div className={styles.gameContainer}>
-          <BoardRenderer board={board} />
-          <GameHUD />
-        </div>
-      )}
+      {phase === "lobby" && <Lobby />}
 
-      {phase === "gameover" && board && (
+      {(phase === "playing" || phase === "gameover") && board && (
         <div className={styles.gameContainer}>
           <BoardRenderer board={board} />
           <GameHUD />
-          <GameOverModal />
+          {phase === "gameover" && <GameOverModal />}
         </div>
       )}
     </div>

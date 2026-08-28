@@ -1,6 +1,6 @@
 import { useGameStore } from "../../store/game-store";
 import { GameEngine } from "@dots-game/shared";
-import type { PlayerColor } from "@dots-game/shared";
+import type { PlayerColor, GameResult } from "@dots-game/shared";
 import styles from "./gameover.module.css";
 
 const COLOR_VAR: Record<PlayerColor, string> = {
@@ -12,11 +12,22 @@ const COLOR_VAR: Record<PlayerColor, string> = {
 
 export function GameOverModal() {
   const state = useGameStore((s) => s.state);
+  const gameResults = useGameStore((s) => s.gameResults);
   const resetGame = useGameStore((s) => s.resetGame);
+  const mode = useGameStore((s) => s.mode);
 
-  if (!state || state.status !== "completed") return null;
+  // Use multiplayer results if available, otherwise compute from local state
+  let results: GameResult[];
+  if (gameResults) {
+    results = gameResults;
+  } else if (state && state.status === "completed") {
+    results = GameEngine.getGameResult(state);
+  } else {
+    return null;
+  }
 
-  const results = GameEngine.getGameResult(state);
+  if (results.length === 0) return null;
+
   const winner = results[0];
 
   return (
@@ -34,7 +45,7 @@ export function GameOverModal() {
               <div className={styles.rank}>#{result.rank}</div>
               <div
                 className={styles.dot}
-                style={{ background: COLOR_VAR[result.color] }}
+                style={{ background: COLOR_VAR[result.color] || "var(--text)" }}
               />
               <div className={styles.name}>{result.playerName}</div>
               <div className={styles.score}>{result.score}</div>
@@ -43,7 +54,7 @@ export function GameOverModal() {
         </div>
 
         <button className={styles.playAgain} onClick={resetGame}>
-          Play again
+          {mode === "multiplayer" ? "Back to menu" : "Play again"}
         </button>
       </div>
     </div>
