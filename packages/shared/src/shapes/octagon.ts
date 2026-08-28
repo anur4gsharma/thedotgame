@@ -1,4 +1,4 @@
-import type { BoardDefinition, VertexDef, EdgeDef, CellDef } from "../types/index.js";
+import type { BoardDefinition, VertexDef, EdgeDef, CellDef } from '../types/index.js';
 
 /**
  * Generate an octagonal silhouette board using triangular cells.
@@ -11,12 +11,17 @@ import type { BoardDefinition, VertexDef, EdgeDef, CellDef } from "../types/inde
 export function generateOctagonBoard(
   rings: number,
   id?: string,
-  name?: string,
+  name?: string
 ): BoardDefinition {
+  if (!Number.isInteger(rings) || rings < 1) {
+    throw new Error(`rings must be a positive integer, got ${rings}`);
+  }
+
   const vertices: VertexDef[] = [];
   const edges: EdgeDef[] = [];
   const cells: CellDef[] = [];
   let edgeCounter = 0;
+  let cellCounter = 0;
 
   // Helper to create an edge (avoids duplicates)
   const addEdge = (vA: string, vB: string, claimable = true): string => {
@@ -27,28 +32,24 @@ export function generateOctagonBoard(
       );
     });
     if (existing) return existing.id;
-    const id = `e-${edgeCounter++}`;
-    edges.push({ id, vertexA: vA, vertexB: vB, claimable });
-    return id;
+    const edgeId = `e-${edgeCounter++}`;
+    edges.push({ id: edgeId, vertexA: vA, vertexB: vB, claimable });
+    return edgeId;
   };
 
   // Center vertex
-  vertices.push({ id: "v-center", x: 0.5, y: 0.5 });
+  vertices.push({ id: 'v-center', x: 0.5, y: 0.5 });
 
   // Generate concentric rings
   const allRings: string[][] = [];
 
   for (let ring = 1; ring <= rings; ring++) {
     const radius = (ring / rings) * 0.4;
-    const numVertices = ring === rings ? 8 : 8 * ring; // Outer ring is octagonal (8 vertices)
+    const numVertices = 8 * ring;
     const ringVertices: string[] = [];
 
     for (let i = 0; i < numVertices; i++) {
-      const angle =
-        ring === rings
-          ? (2 * Math.PI * i) / 8 - Math.PI / 8 // Octagonal alignment
-          : (2 * Math.PI * i) / numVertices;
-
+      const angle = (2 * Math.PI * i) / numVertices - Math.PI / 8;
       const x = 0.5 + radius * Math.cos(angle);
       const y = 0.5 + radius * Math.sin(angle);
       const vId = `v-${ring}-${i}`;
@@ -65,99 +66,105 @@ export function generateOctagonBoard(
     const inner = allRings[0];
     for (let i = 0; i < inner.length; i++) {
       const next = (i + 1) % inner.length;
-      const e1 = addEdge("v-center", inner[i]);
-      const e2 = addEdge("v-center", inner[next]);
-      const e3 = addEdge(inner[i], inner[next]);
+      const e1 = addEdge('v-center', inner[i]);
+      const e2 = addEdge(inner[i], inner[next]);
+      const e3 = addEdge(inner[next], 'v-center');
 
       cells.push({
-        id: `tri-c-${i}`,
-        type: "triangle",
+        id: `c-${cellCounter++}`,
+        type: 'triangle',
         edgeIds: [e1, e2, e3],
-        vertexIds: ["v-center", inner[i], inner[next]],
+        vertexIds: ['v-center', inner[i], inner[next]],
       });
     }
   }
 
   // Connect consecutive rings
   for (let r = 0; r < allRings.length - 1; r++) {
-    const inner = allRings[r];
-    const outer = allRings[r + 1];
+    const rInner = allRings[r];
+    const rOuter = allRings[r + 1];
+    const n = rInner.length;
+    const m = rOuter.length;
 
-    // For each outer vertex, find the nearest inner vertex and create triangles
-    // Use a marching approach around the ring
-    let innerIdx = 0;
+    let i = 0;
+    let j = 0;
 
-    for (let i = 0; i < outer.length; i++) {
-      const vOuter = outer[i];
-      const vOuterNext = outer[(i + 1) % outer.length];
+    while (i < n || j < m) {
+      if (i === n && j === m) break;
 
-      // Calculate angle of this outer vertex
-      const outerAngle = (2 * Math.PI * i) / outer.length;
+      const nextI = i + 1;
+      const nextJ = j + 1;
 
-      // Find the inner vertex closest to this angle
-      while (innerIdx < inner.length - 1) {
-        const angleCurr = (2 * Math.PI * innerIdx) / inner.length;
-        const angleNext =
-          (2 * Math.PI * ((innerIdx + 1) % inner.length)) / inner.length;
-
-        const distCurr = Math.abs(angleCurr - outerAngle);
-        const distNext = Math.abs(angleNext - outerAngle);
-
-        // Handle wraparound
-        const d1 = Math.min(distCurr, 2 * Math.PI - distCurr);
-        const d2 = Math.min(distNext, 2 * Math.PI - distNext);
-
-        if (d2 < d1) {
-          innerIdx++;
+      let advanceInner = false;
+      if (i === n) {
+        advanceInner = false;
+      } else if (j === m) {
+        advanceInner = true;
+      } else {
+        const fracI = nextI / n;
+        const fracJ = nextJ / m;
+        // Float comparison with small epsilon
+        if (Math.abs(fracI - fracJ) < 1e-9) {
+          advanceInner = false; // Always advance outer on ties
+        } else if (fracI < fracJ) {
+          advanceInner = true;
         } else {
-          break;
+          advanceInner = false;
         }
       }
 
-      const vInner = inner[innerIdx];
-      const vInnerNext = inner[(innerIdx + 1) % inner.length];
+      if (advanceInner) {
+        const vO = rOuter[j % m];
+        const vI = rInner[i % n];
+        const vINext = rInner[nextI % n];
 
-      // Create edges
-      const eOuter = addEdge(vOuter, vOuterNext);
-      const eBridge1 = addEdge(vOuter, vInner);
-      const eBridge2 = addEdge(vOuterNext, vInnerNext);
+        const e1 = addEdge(vO, vI);
+        const e2 = addEdge(vI, vINext);
+        const e3 = addEdge(vINext, vO);
 
-      // Triangle 1: outer[i], outer[i+1], inner[innerIdx]
-      cells.push({
-        id: `tri-${r + 1}-${i}-a`,
-        type: "triangle",
-        edgeIds: [eOuter, eBridge1, eBridge2],
-        vertexIds: [vOuter, vOuterNext, vInner],
-      });
+        cells.push({
+          id: `c-${cellCounter++}`,
+          type: 'triangle',
+          edgeIds: [e1, e2, e3],
+          vertexIds: [vO, vI, vINext],
+        });
+        i = nextI;
+      } else {
+        const vI = rInner[i % n];
+        const vO = rOuter[j % m];
+        const vONext = rOuter[nextJ % m];
 
-      // If there are more inner vertices between innerIdx and innerIdx+1,
-      // create additional triangles
-      if (inner.length > outer.length) {
-        // Connect outer[i] to additional inner vertices
-        for (let j = 1; j < Math.ceil(inner.length / outer.length); j++) {
-          const nextInnerIdx = (innerIdx + j) % inner.length;
-          const vInnerJ = inner[nextInnerIdx];
-          const eBridge = addEdge(vOuter, vInnerJ);
+        const e1 = addEdge(vI, vO);
+        const e2 = addEdge(vO, vONext);
+        const e3 = addEdge(vONext, vI);
 
-          // Find previous inner vertex edge
-          const prevInnerIdx = (innerIdx + j - 1) % inner.length;
-          const vInnerPrev = inner[prevInnerIdx];
-          const ePrevBridge = edges.find(
-            (e) =>
-              (e.vertexA === vOuter && e.vertexB === vInnerPrev) ||
-              (e.vertexA === vInnerPrev && e.vertexB === vOuter),
-          );
+        cells.push({
+          id: `c-${cellCounter++}`,
+          type: 'triangle',
+          edgeIds: [e1, e2, e3],
+          vertexIds: [vI, vO, vONext],
+        });
+        j = nextJ;
+      }
+    }
+  }
 
-          if (ePrevBridge) {
-            const eInner = addEdge(vInnerPrev, vInnerJ);
-            cells.push({
-              id: `tri-${r + 1}-${i}-b-${j}`,
-              type: "triangle",
-              edgeIds: [ePrevBridge.id, eBridge, eInner],
-              vertexIds: [vOuter, vInnerPrev, vInnerJ],
-            });
-          }
-        }
+  // Validate all cells
+  for (const cell of cells) {
+    if (cell.vertexIds.length !== 3) {
+      throw new Error(`Cell ${cell.id} has ${cell.vertexIds.length} vertices, expected 3`);
+    }
+    if (cell.edgeIds.length !== 3) {
+      throw new Error(`Cell ${cell.id} has ${cell.edgeIds.length} edges, expected 3`);
+    }
+    const cellVertices = new Set(cell.vertexIds);
+    for (const edgeId of cell.edgeIds) {
+      const edge = edges.find((e) => e.id === edgeId);
+      if (!edge) {
+        throw new Error(`Cell ${cell.id} references non-existent edge ${edgeId}`);
+      }
+      if (!cellVertices.has(edge.vertexA) || !cellVertices.has(edge.vertexB)) {
+        throw new Error(`Cell ${cell.id} edge ${edgeId} connects vertices not in cell`);
       }
     }
   }
@@ -165,20 +172,20 @@ export function generateOctagonBoard(
   return {
     id: id || `octagon-${rings}`,
     name: name || `Octagon (rings ${rings})`,
-    cellType: "triangle",
-    symmetry: "radial",
+    cellType: 'triangle',
+    symmetry: 'radial',
     vertices,
     edges,
     cells,
     metadata: {
       description: `An octagonal silhouette with ${cells.length} triangular cells`,
       recommendedPlayerCount: { min: 2, max: 4 },
-      difficulty: "hard",
+      difficulty: 'hard',
     },
   };
 }
 
 // ─── Predefined Sizes ───────────────────────────────────
 
-export const OCTAGON_2 = generateOctagonBoard(2, "octagon-2", "Octagon (rings 2)");
-export const OCTAGON_3 = generateOctagonBoard(3, "octagon-3", "Octagon (rings 3)");
+export const OCTAGON_2 = generateOctagonBoard(2, 'octagon-2', 'Octagon (rings 2)');
+export const OCTAGON_3 = generateOctagonBoard(3, 'octagon-3', 'Octagon (rings 3)');

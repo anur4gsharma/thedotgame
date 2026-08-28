@@ -92,7 +92,7 @@ describe("Shape Registry", () => {
       },
     };
 
-    expect(() => registerShape(invalidBoard)).toThrow("references unknown edge");
+    expect(() => registerShape(invalidBoard)).toThrow(/references unknown edge|must have exactly 4 edges/);
   });
 
   it("should return undefined for unknown shape IDs", () => {

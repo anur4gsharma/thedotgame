@@ -19,6 +19,10 @@ export function generateHexagonBoard(
   id?: string,
   name?: string,
 ): BoardDefinition {
+  if (size < 1 || !Number.isInteger(size)) {
+    throw new Error("size must be a positive integer");
+  }
+
   // Generate hexagonal grid vertices
   const vertices: VertexDef[] = [];
   const vertexGrid = new Map<string, string>(); // "q,r" → vertex id
@@ -159,11 +163,33 @@ export function generateHexagonBoard(
 
   const rangeX = maxX - minX || 1;
   const rangeY = maxY - minY || 1;
+  const uniformRange = Math.max(rangeX, rangeY);
   const padding = 0.1;
 
+  const offsetX = (uniformRange - rangeX) / 2;
+  const offsetY = (uniformRange - rangeY) / 2;
+
   for (const v of vertices) {
-    v.x = padding + ((v.x - minX) / rangeX) * (1 - 2 * padding);
-    v.y = padding + ((v.y - minY) / rangeY) * (1 - 2 * padding);
+    v.x = padding + ((v.x - minX + offsetX) / uniformRange) * (1 - 2 * padding);
+    v.y = padding + ((v.y - minY + offsetY) / uniformRange) * (1 - 2 * padding);
+  }
+
+  // Validate the generated board
+  for (const cell of cells) {
+    if (cell.edgeIds.length !== 3) {
+      throw new Error(`Cell ${cell.id} does not have exactly 3 edges`);
+    }
+    if (cell.vertexIds.length !== 3) {
+      throw new Error(`Cell ${cell.id} does not have exactly 3 vertices`);
+    }
+    const cellVertices = new Set(cell.vertexIds);
+    for (const edgeId of cell.edgeIds) {
+      const edge = edges.find(e => e.id === edgeId);
+      if (!edge) throw new Error(`Missing edge ${edgeId} in cell ${cell.id}`);
+      if (!cellVertices.has(edge.vertexA) || !cellVertices.has(edge.vertexB)) {
+        throw new Error(`Edge ${edgeId} connects vertices outside cell ${cell.id}`);
+      }
+    }
   }
 
   return {
