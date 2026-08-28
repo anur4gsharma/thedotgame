@@ -1,4 +1,4 @@
-import type { SerializedGameState, GameResult, Player } from "./game.js";
+import type { SerializedGameState, GameResult } from "./game.js";
 
 // ─── Client → Server Messages ───────────────────────────
 
@@ -8,6 +8,7 @@ export type ClientMessage =
   | MakeMoveMessage
   | ReconnectMessage
   | LeaveGameMessage
+  | StartGameMessage
   | PingMessage;
 
 export interface CreateGameMessage {
@@ -39,6 +40,10 @@ export interface LeaveGameMessage {
   type: "leave_game";
 }
 
+export interface StartGameMessage {
+  type: "start_game";
+}
+
 export interface PingMessage {
   type: "ping";
   timestamp: number;
@@ -56,6 +61,7 @@ export type ServerMessage =
   | PlayerLeftMessage
   | PlayerReconnectedMessage
   | GameOverMessage
+  | LobbyStateMessage
   | ErrorMessage
   | PongMessage;
 
@@ -63,13 +69,13 @@ export interface GameCreatedMessage {
   type: "game_created";
   roomCode: string;
   playerId: string;
-  state: SerializedGameState;
+  state: LobbyState;
 }
 
 export interface PlayerJoinedMessage {
   type: "player_joined";
-  player: Player;
-  state: SerializedGameState;
+  player: LobbyPlayer;
+  state: LobbyState;
 }
 
 export interface GameStartedMessage {
@@ -114,6 +120,11 @@ export interface GameOverMessage {
   results: GameResult[];
 }
 
+export interface LobbyStateMessage {
+  type: "lobby_state";
+  state: LobbyState;
+}
+
 export interface ErrorMessage {
   type: "error";
   code: string;
@@ -123,4 +134,23 @@ export interface ErrorMessage {
 export interface PongMessage {
   type: "pong";
   timestamp: number;
+}
+
+// ─── Lobby Types ────────────────────────────────────────
+
+export interface LobbyState {
+  boardId: string;
+  roomCode: string;
+  hostId: string;
+  maxPlayers: number;
+  players: LobbyPlayer[];
+  status: "lobby" | "playing" | "completed";
+}
+
+export interface LobbyPlayer {
+  id: string;
+  name: string;
+  color: string;
+  rating: number;
+  connected: boolean;
 }
