@@ -1,0 +1,155 @@
+.hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 16px;
+}
+
+/* Top bar */
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: auto;
+}
+
+.boardInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.boardName {
+  font-weight: 500;
+  color: var(--text);
+}
+
+.separator {
+  color: var(--text-tertiary);
+}
+
+.cellCount {
+  font-variant-numeric: tabular-nums;
+}
+
+.leaveBtn {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  transition:
+    color var(--duration-fast) var(--ease-out),
+    background var(--duration-fast) var(--ease-out);
+}
+
+.leaveBtn:hover {
+  color: var(--text);
+  background: var(--bg-hover);
+}
+
+/* Bottom bar */
+.bottomBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: auto;
+  gap: 16px;
+}
+
+/* Scores */
+.scores {
+  display: flex;
+  gap: 16px;
+}
+
+.playerScore {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.playerScore.active {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.playerDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.playerName {
+  font-weight: 500;
+}
+
+.score {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  min-width: 16px;
+  text-align: right;
+}
+
+/* Turn indicator */
+.turnIndicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.turnDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.turnText {
+  font-weight: 500;
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+  .hud {
+    padding: 12px;
+  }
+
+  .scores {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .playerScore {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+
+  .playerName {
+    display: none;
+  }
+
+  .bottomBar {
+    flex-direction: column;
+    gap: 8px;
+  }
+}

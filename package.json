@@ -1,0 +1,13 @@
+{
+  "name": "dots-game",
+  "private": true,
+  "scripts": {
+    "test": "pnpm -r test",
+    "test:shared": "pnpm --filter @dots-game/shared test",
+    "typecheck": "pnpm -r typecheck",
+    "typecheck:shared": "pnpm --filter @dots-game/shared typecheck",
+    "build": "pnpm -r build",
+    "build:shared": "pnpm --filter @dots-game/shared build",
+    "lint": "pnpm -r lint"
+  }
+}
