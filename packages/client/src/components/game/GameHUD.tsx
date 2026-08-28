@@ -10,10 +10,14 @@ const COLOR_VAR: Record<PlayerColor, string> = {
 };
 
 
+import { TurnTimer } from "./TurnTimer";
+import { ChatPanel } from "./ChatPanel";
+
 export function GameHUD() {
   const state = useGameStore((s) => s.state);
   const board = useGameStore((s) => s.board);
   const resetGame = useGameStore((s) => s.resetGame);
+  const mode = useGameStore((s) => s.mode);
 
   if (!state || !board) return null;
 
@@ -65,6 +69,7 @@ export function GameHUD() {
 
         {/* Turn indicator */}
         <div className={styles.turnIndicator}>
+          {mode === "multiplayer" && <TurnTimer />}
           <div
             className={styles.turnDot}
             style={{ background: COLOR_VAR[currentPlayer.color] }}
@@ -74,6 +79,8 @@ export function GameHUD() {
           </span>
         </div>
       </div>
+      
+      {mode === "multiplayer" && <ChatPanel />}
     </div>
   );
 }

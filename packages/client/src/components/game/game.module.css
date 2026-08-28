@@ -153,3 +153,70 @@
     gap: 8px;
   }
 }
+
+.turnTimer {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  background: var(--bg-hover);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.chatPanel {
+  position: absolute;
+  right: 16px;
+  bottom: 80px;
+  width: 280px;
+  max-height: 300px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  pointer-events: auto;
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+.chatMessages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chatMessage {
+  font-size: 13px;
+  color: var(--text);
+  background: var(--bg-hover);
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  align-self: flex-start;
+  word-break: break-word;
+}
+
+.chatForm {
+  display: flex;
+  border-top: 1px solid var(--border);
+  padding: 8px;
+  gap: 8px;
+}
+
+.chatInput {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+}
+
+.chatButton {
+  font-size: 13px;
+  color: var(--accent);
+  font-weight: 500;
+  cursor: pointer;
+}

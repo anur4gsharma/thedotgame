@@ -1,53 +1,38 @@
-# Dots
+# The Dot Game (Dots and Boxes)
 
-A real-time multiplayer shape-based strategy game inspired by Dots and Boxes.
+A multiplayer dots-and-boxes game built with React, Node.js, and WebSockets.
 
-Players claim edges on a board to complete enclosed cells. Complete a cell to score a point and take another turn.
-
-## Board Shapes
-
-- **Square Grid** — classic Dots and Boxes
-- **Large Triangle** — triangular cells on a triangular board
-- **Hexagonal** — hexagonal silhouette with triangular cells
-- **Octagonal** — octagonal silhouette with triangular cells
+## Features
+- Real-time multiplayer gameplay
+- Matchmaking and lobby system
+- Spectator mode
+- Responsive UI
 
 ## Tech Stack
+- **Frontend**: React, TypeScript, Vite, TailwindCSS
+- **Backend**: Node.js, Express, Socket.IO, TypeScript
+- **Shared**: Zod for validation, shared types
 
-- **Frontend:** React, Vite, TypeScript, SVG
-- **Shared:** Deterministic game engine, shape generators
-- **State:** Zustand
-- **Styling:** CSS Modules, CSS Custom Properties
+## Setup Instructions
+1. Clone the repository
+2. Install dependencies using `pnpm`:
+   ```bash
+   pnpm install
+   ```
+3. Start the development server (runs both frontend and backend concurrently):
+   ```bash
+   pnpm dev
+   ```
 
-## Getting Started
+## Architecture
+The monorepo contains:
+- `apps/frontend`: React application
+- `apps/backend`: Node.js server
+- `packages/shared`: Shared types and logic
 
-```bash
-# Install dependencies
-pnpm install
-
-# Run dev server
-cd packages/client && pnpm dev
-
-# Run tests
-cd packages/shared && pnpm test
-```
-
-## Project Structure
-
-```
-packages/
-  shared/    — Game engine, types, shape definitions
-  client/    — React frontend
-```
-
-## Development
-
-```bash
-# Type check
-pnpm typecheck
-
-# Build
-pnpm build
-
-# Test
-pnpm test
-```
+## WebSocket Protocol
+- `join_lobby`: Request to join matchmaking.
+- `game_start`: Broadcasted when a match is found.
+- `make_move`: Player attempts to draw a line.
+- `game_update`: Broadcasted with the new game state after a valid move.
+- `game_over`: Broadcasted when the game concludes.

@@ -96,3 +96,33 @@
 .vertexDraggable:active {
   cursor: grabbing;
 }
+
+@keyframes edgeDraw {
+  from {
+    stroke-dashoffset: 1;
+    stroke-dasharray: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+    stroke-dasharray: 1;
+  }
+}
+
+.edgeDrawn {
+  animation: edgeDraw var(--duration-normal) var(--ease-out) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board, .cellFill, .edgePending, .dragPreview, .edgeDrawn {
+    animation: none !important;
+  }
+  .edge, .vertex, .vertexDraggable, .hitArea {
+    transition: none !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .edge {
+    stroke-width: 0.024 !important;
+  }
+}

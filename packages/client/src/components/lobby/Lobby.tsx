@@ -1,4 +1,5 @@
 import { useGameStore, AVAILABLE_BOARDS } from "../../store/game-store";
+import { LoadingSpinner } from "../ui/LoadingSpinner";
 import { getRankTier } from "./elo-display";
 import styles from "./lobby.module.css";
 
@@ -108,7 +109,7 @@ export function Lobby() {
             {/* Empty slots */}
             {Array.from({ length: lobbyState.maxPlayers - lobbyState.players.length }).map((_, i) => (
               <div key={`empty-${i}`} className={`${styles.playerCard} ${styles.empty}`}>
-                <div className={styles.playerDot} style={{ background: "var(--border)" }} />
+                <LoadingSpinner />
                 <span className={styles.waitingText}>Waiting for player...</span>
               </div>
             ))}

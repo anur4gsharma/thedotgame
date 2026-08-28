@@ -13,6 +13,8 @@ import {
   generateOctagonBoard,
 } from "@dots-game/shared";
 import { getSocket } from "../lib/websocket";
+import { sound } from "../lib/sound";
+import { haptics } from "../lib/haptics";
 
 // ─── Available Boards ───────────────────────────────────
 
@@ -151,7 +153,21 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return;
     }
 
+    const prevCompletedCells = Array.from(state.cells.values()).filter(c => c.owner).length;
     const newState = GameEngine.applyMove(state, board, runtime, currentPlayer.id, edgeId);
+    const newCompletedCells = Array.from(newState.cells.values()).filter(c => c.owner).length;
+
+    if (newState.status === "completed") {
+      sound.playWin();
+      haptics.playWin();
+    } else if (newCompletedCells > prevCompletedCells) {
+      sound.playScore();
+      haptics.playScore();
+    } else {
+      sound.playMove();
+      haptics.playMove();
+    }
+
     set({
       state: newState,
       pendingEdge: null,
@@ -274,7 +290,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
         const player = state.players.find((p) => p.id === msg.playerId);
         if (!player) break;
 
+        const prevCompletedCells = Array.from(state.cells.values()).filter(c => c.owner).length;
         const newState = GameEngine.applyMove(state, board, runtime, msg.playerId, msg.edgeId);
+        const newCompletedCells = Array.from(newState.cells.values()).filter(c => c.owner).length;
 
         // Override scores and turn from server
         const serverScores = new Map<string, number>();
@@ -289,6 +307,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
         }
 
         newState.sequenceNumber = msg.sequenceNumber;
+        
+        if (newState.status === "completed") {
+          sound.playWin();
+          haptics.playWin();
+        } else if (newCompletedCells > prevCompletedCells) {
+          sound.playScore();
+          haptics.playScore();
+        } else {
+          sound.playMove();
+          haptics.playMove();
+        }
 
         set({
           state: newState,

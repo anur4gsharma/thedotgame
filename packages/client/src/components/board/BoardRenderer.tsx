@@ -168,6 +168,9 @@ export function BoardRenderer({ board }: BoardRendererProps) {
       preserveAspectRatio="xMidYMid meet"
       onPointerUp={handlePointerUp}
       style={{ touchAction: "none" }}
+      role="application"
+      aria-label="Dots and Boxes Game Board"
+      aria-live="polite"
     >
       {/* Completed cells */}
       {board.cells.map((cell) => {
@@ -237,6 +240,7 @@ export function BoardRenderer({ board }: BoardRendererProps) {
           if (isClaimed && owner) {
             strokeColor = PLAYER_COLORS[owner.color];
             strokeWidth = 0.018;
+            edgeClass = `${styles.edge} ${styles.edgeDrawn || ""}`;
           } else if (isPending || isDragTarget) {
             strokeColor = currentColor;
             strokeWidth = 0.02;
