@@ -2,6 +2,5 @@
   "version": 2,
   "buildCommand": "pnpm build",
   "outputDirectory": "packages/client/dist",
-  "framework": "vite",
-  "ignoreCommand": "git diff HEAD^ HEAD --quiet packages/client packages/shared"
+  "framework": "vite"
 }
