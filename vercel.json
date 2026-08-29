@@ -1,6 +1,0 @@
-{
-  "version": 2,
-  "buildCommand": "pnpm build",
-  "outputDirectory": "packages/client/dist",
-  "framework": "vite"
-}
