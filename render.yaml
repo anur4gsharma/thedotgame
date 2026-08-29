@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: dots-game-server
+    env: node
+    plan: free
+    rootDir: .
+    buildCommand: pnpm install && pnpm build
+    startCommand: cd packages/server && pnpm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
