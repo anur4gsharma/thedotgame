@@ -71,7 +71,15 @@ export type ServerMessage =
   | LobbyStateMessage
   | ErrorMessage
   | PongMessage
-  | ChatMessageServer;
+  | ChatMessageServer
+  | GameJoinedMessage;
+
+export interface GameJoinedMessage {
+  type: "game_joined";
+  roomCode: string;
+  playerId: string;
+  state: LobbyState;
+}
 
 export interface ChatMessageServer {
   type: "chat_message";

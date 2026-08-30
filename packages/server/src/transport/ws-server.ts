@@ -101,7 +101,12 @@ export function createWsServer(roomManager: RoomManager) {
 
         const lobbyState = buildLobbyState(result.room);
         const lobbyPlayer = { id: result.player.playerId, name: result.player.playerName, color: result.player.color, rating: result.player.rating, connected: result.player.connected };
-        send(ws, { type: "player_joined", player: lobbyPlayer, state: lobbyState });
+        send(ws, { 
+          type: "game_joined", 
+          roomCode: result.room.code,
+          playerId: result.player.playerId,
+          state: lobbyState 
+        });
         broadcast(result.room.code, { type: "player_joined", player: lobbyPlayer, state: lobbyState }, ws);
         break;
       }
@@ -200,7 +205,12 @@ export function createWsServer(roomManager: RoomManager) {
         const lobbyState = buildLobbyState(result.room);
         const lobbyPlayer = { id: result.player.playerId, name: result.player.playerName, color: result.player.color, rating: result.player.rating, connected: result.player.connected };
         
-        send(ws, { type: "player_joined", player: lobbyPlayer, state: lobbyState });
+        send(ws, { 
+          type: "game_joined", 
+          roomCode: result.room.code,
+          playerId: result.player.playerId,
+          state: lobbyState 
+        });
         
         if (result.room.status === "playing" && result.room.gameState) {
           send(ws, { type: "game_started", state: GameEngine.serialize(result.room.gameState) });

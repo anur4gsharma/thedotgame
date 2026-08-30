@@ -227,6 +227,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
         break;
       }
 
+      case "game_joined": {
+        set({
+          roomCode: msg.roomCode,
+          playerId: msg.playerId,
+          lobbyState: msg.state,
+          isHost: false,
+          phase: "lobby",
+          error: null,
+        });
+        break;
+      }
+
       case "player_joined":
       case "lobby_state": {
         set({
