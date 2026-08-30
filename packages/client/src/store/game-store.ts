@@ -416,3 +416,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 getSocket().onMessage((msg) => {
   useGameStore.getState().handleServerMessage(msg);
 });
+
+getSocket().onConnectionChange((connected) => {
+  useGameStore.getState().setConnected(connected);
+});

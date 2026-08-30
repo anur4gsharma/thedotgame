@@ -11,6 +11,7 @@ export class GameSocket {
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private _connected = false;
   private messageQueue: ClientMessage[] = [];
+  private connectionHandlers: ((connected: boolean) => void)[] = [];
 
   constructor(url: string) {
     this.url = url;
@@ -20,13 +21,29 @@ export class GameSocket {
     return this._connected;
   }
 
+  private setConnected(status: boolean) {
+    if (this._connected === status) return;
+    this._connected = status;
+    for (const handler of this.connectionHandlers) {
+      handler(status);
+    }
+  }
+
+  onConnectionChange(handler: (connected: boolean) => void) {
+    this.connectionHandlers.push(handler);
+    handler(this._connected);
+    return () => {
+      this.connectionHandlers = this.connectionHandlers.filter((h) => h !== handler);
+    };
+  }
+
   connect() {
     if (this.ws?.readyState === WebSocket.OPEN || this.ws?.readyState === WebSocket.CONNECTING) return;
 
     this.ws = new WebSocket(this.url);
 
     this.ws.onopen = () => {
-      this._connected = true;
+      this.setConnected(true);
       this.reconnectAttempts = 0;
       while (this.messageQueue.length > 0) {
         const msg = this.messageQueue.shift();
@@ -44,12 +61,12 @@ export class GameSocket {
     };
 
     this.ws.onclose = () => {
-      this._connected = false;
+      this.setConnected(false);
       this.scheduleReconnect();
     };
 
     this.ws.onerror = () => {
-      this._connected = false;
+      this.setConnected(false);
       for (const handler of this.handlers) {
         handler({ type: "error", code: "CONNECTION_FAILED", message: "Failed to connect to the game server. Please try again." });
       }
