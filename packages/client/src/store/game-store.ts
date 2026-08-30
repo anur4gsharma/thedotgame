@@ -157,6 +157,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
     socket.connect();
     set({ mode: "multiplayer", error: null });
 
+    if ((window as any).__wsUnsub) {
+      (window as any).__wsUnsub();
+    }
     const unsubscribe = socket.onMessage((msg) => {
       get().handleServerMessage(msg);
     });
@@ -178,6 +181,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
     socket.connect();
     set({ mode: "multiplayer", error: null });
 
+    if ((window as any).__wsUnsub) {
+      (window as any).__wsUnsub();
+    }
     const unsubscribe = socket.onMessage((msg) => {
       get().handleServerMessage(msg);
     });

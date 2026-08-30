@@ -1,75 +1,56 @@
 :root {
-  /* Dark theme (default) */
-  --bg: #0a0a0b;
-  --bg-elevated: #141416;
-  --bg-hover: #1c1c1f;
-  --border: #2a2a2e;
-  --border-subtle: #1e1e21;
-  --text: #ededef;
-  --text-secondary: #8a8a8e;
-  --text-tertiary: #5a5a5e;
-  --accent: #3b82f6;
-  --accent-dim: #1e3a5f;
+  /* Paper & Ink theme */
+  --bg: #F3F0E8;
+  --bg-elevated: #F3F0E8;
+  --bg-hover: rgba(22, 22, 22, 0.05);
+  --border: #E5E2D9;
+  --border-subtle: #EBE8E0;
+  --text: #161616;
+  --text-secondary: #9A978F;
+  --text-tertiary: #B0ADA6;
+  --accent: #161616;
+  --accent-dim: rgba(22, 22, 22, 0.1);
 
-  /* Player colors */
-  --player-blue: #3b82f6;
-  --player-red: #ef4444;
-  --player-green: #22c55e;
-  --player-orange: #f97316;
+  /* Player colors - strictly two */
+  --player-blue: #2957A4; /* Cobalt */
+  --player-red: #D94B3D;  /* Vermillion */
+  --player-green: #161616; /* Fallback */
+  --player-orange: #161616; /* Fallback */
 
-  /* Player colors (dimmed for cell fills) */
-  --player-blue-dim: rgba(59, 130, 246, 0.12);
-  --player-red-dim: rgba(239, 68, 68, 0.12);
-  --player-green-dim: rgba(34, 197, 94, 0.12);
-  --player-orange-dim: rgba(249, 115, 22, 0.12);
+  /* Player fills */
+  --player-blue-dim: rgba(41, 87, 164, 0.15);
+  --player-red-dim: rgba(217, 75, 61, 0.15);
+  --player-green-dim: rgba(22, 22, 22, 0.15);
+  --player-orange-dim: rgba(22, 22, 22, 0.15);
 
   /* Edge colors */
-  --edge-default: #2a2a2e;
-  --edge-hover: #4a4a50;
-  --edge-claimed: #5a5a60;
+  --edge-default: transparent;
+  --edge-hover: rgba(22, 22, 22, 0.2);
+  --edge-claimed: #161616;
 
   /* Vertex colors */
-  --vertex-default: #3a3a40;
-  --vertex-active: #6a6a70;
+  --vertex-default: #161616;
+  --vertex-active: #161616;
 
   /* Geometry */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
 
   /* Transitions */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --duration-fast: 80ms;
   --duration-normal: 150ms;
   --duration-slow: 250ms;
-}
 
-[data-theme="light"] {
-  --bg: #fafafa;
-  --bg-elevated: #ffffff;
-  --bg-hover: #f0f0f0;
-  --border: #e0e0e0;
-  --border-subtle: #ebebeb;
-  --text: #111111;
-  --text-secondary: #666666;
-  --text-tertiary: #999999;
-
-  --edge-default: #c8c8cc;
-  --edge-hover: #9a9aa0;
-  --edge-claimed: #6a6a70;
-
-  --vertex-default: #b0b0b4;
-  --vertex-active: #7a7a80;
-
-  --player-blue-dim: rgba(59, 130, 246, 0.10);
-  --player-red-dim: rgba(239, 68, 68, 0.10);
-  --player-green-dim: rgba(34, 197, 94, 0.10);
-  --player-orange-dim: rgba(249, 115, 22, 0.10);
+  /* Typography */
+  --font-display: 'Fraunces', serif;
+  --font-ui: 'JetBrains Mono', monospace;
 }
 
 html, body, #root {
   height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro", "Inter", system-ui, sans-serif;
+  font-family: var(--font-ui);
   background: var(--bg);
   color: var(--text);
   -webkit-font-smoothing: antialiased;

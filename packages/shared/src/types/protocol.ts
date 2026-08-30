@@ -14,7 +14,7 @@ export type ClientMessage =
 export interface CreateGameMessage {
   type: "create_game";
   boardId: string;
-  boardSize: number;
+  boardSize?: number;
   maxPlayers: number;
   playerName: string;
 }

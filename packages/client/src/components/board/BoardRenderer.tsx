@@ -31,8 +31,8 @@ export function BoardRenderer({ board }: BoardRendererProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [dragVertex, setDragVertex] = useState<string | null>(null);
   const [pointerPos, setPointerPos] = useState<{ x: number; y: number } | null>(null);
+  const [hoverEdge, setHoverEdge] = useState<string | null>(null);
 
-  // Compute viewBox
   const viewBox = useMemo(() => {
     let minX = Infinity, maxX = -Infinity;
     let minY = Infinity, maxY = -Infinity;
@@ -42,18 +42,16 @@ export function BoardRenderer({ board }: BoardRendererProps) {
       minY = Math.min(minY, v.y);
       maxY = Math.max(maxY, v.y);
     }
-    const pad = 0.06;
+    const pad = 0.15;
     return `${minX - pad} ${minY - pad} ${maxX - minX + pad * 2} ${maxY - minY + pad * 2}`;
   }, [board]);
 
-  // Vertex position lookup
   const vertexPos = useMemo(() => {
     const map = new Map<string, { x: number; y: number }>();
     for (const v of board.vertices) map.set(v.id, v);
     return map;
   }, [board]);
 
-  // Build vertex→edges index
   const vertexEdges = useMemo(() => {
     const map = new Map<string, string[]>();
     for (const edge of board.edges) {
@@ -68,7 +66,6 @@ export function BoardRenderer({ board }: BoardRendererProps) {
     return map;
   }, [board]);
 
-  // Edge vertex pairs
   const edgeVertices = useMemo(() => {
     const map = new Map<string, { a: string; b: string }>();
     for (const edge of board.edges) {
@@ -77,10 +74,8 @@ export function BoardRenderer({ board }: BoardRendererProps) {
     return map;
   }, [board]);
 
-  // Dot radius - small
-  const dotRadius = 0.012;
-  // Hit radius for touch/pointer detection
-  const hitRadius = 0.04;
+  const dotRadius = 0.015;
+  const hitRadius = 0.05;
 
   const commitMove = useCallback(
     (edgeId: string) => {
@@ -104,7 +99,6 @@ export function BoardRenderer({ board }: BoardRendererProps) {
     [vertexEdges, edgeVertices],
   );
 
-  // Convert screen coords to SVG coords
   const toSVGCoords = useCallback(
     (clientX: number, clientY: number): { x: number; y: number } | null => {
       const svg = svgRef.current;
@@ -120,7 +114,6 @@ export function BoardRenderer({ board }: BoardRendererProps) {
     [],
   );
 
-  // Find closest vertex to a point
   const findClosestVertex = useCallback(
     (px: number, py: number, exclude?: string): string | null => {
       let closest: string | null = null;
@@ -140,7 +133,6 @@ export function BoardRenderer({ board }: BoardRendererProps) {
     [board, hitRadius],
   );
 
-  // Pointer down on a vertex — start drag
   const handlePointerDown = useCallback(
     (vertexId: string, e: React.PointerEvent) => {
       if (!state) return;
@@ -153,22 +145,38 @@ export function BoardRenderer({ board }: BoardRendererProps) {
     [state, vertexPos],
   );
 
-  // Pointer move — update drag line
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
-      if (!dragVertex) return;
       const svgPt = toSVGCoords(e.clientX, e.clientY);
-      if (svgPt) setPointerPos(svgPt);
+      if (!svgPt) return;
+
+      if (dragVertex) {
+        setPointerPos(svgPt);
+        
+        // Snap preview line to nearest valid vertex
+        const target = findClosestVertex(svgPt.x, svgPt.y, dragVertex);
+        if (target) {
+          const edgeId = findEdge(dragVertex, target);
+          if (edgeId) {
+            const edgeState = state?.edges.get(edgeId);
+            if (!edgeState?.owner) {
+               setHoverEdge(edgeId);
+               return;
+            }
+          }
+        }
+        setHoverEdge(null);
+      }
     },
-    [dragVertex, toSVGCoords],
+    [dragVertex, toSVGCoords, findClosestVertex, findEdge, state]
   );
 
-  // Pointer up — check if we landed on a neighbor vertex and commit
   const handlePointerUp = useCallback(
     (e: React.PointerEvent) => {
       if (!dragVertex || !state) {
         setDragVertex(null);
         setPointerPos(null);
+        setHoverEdge(null);
         return;
       }
 
@@ -188,13 +196,14 @@ export function BoardRenderer({ board }: BoardRendererProps) {
 
       setDragVertex(null);
       setPointerPos(null);
+      setHoverEdge(null);
     },
     [dragVertex, state, toSVGCoords, findClosestVertex, findEdge, commitMove],
   );
 
-  // Current player color
   const currentPlayer = state?.players[state?.currentPlayerIndex];
   const currentColor = currentPlayer ? PLAYER_COLORS[currentPlayer.color] : "var(--accent)";
+  const lastMoveId = state?.moveHistory[state.moveHistory.length - 1]?.edgeId;
 
   if (!state) return null;
 
@@ -206,11 +215,19 @@ export function BoardRenderer({ board }: BoardRendererProps) {
       preserveAspectRatio="xMidYMid meet"
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
-      onPointerCancel={() => { setDragVertex(null); setPointerPos(null); }}
+      onPointerCancel={() => { setDragVertex(null); setPointerPos(null); setHoverEdge(null); }}
       style={{ touchAction: "none" }}
       role="application"
-      aria-label="Dots and Boxes Game Board"
     >
+      <defs>
+        <pattern id="graph-paper" x="0" y="0" width="0.1" height="0.1" patternUnits="userSpaceOnUse">
+          <line x1="0" y1="0" x2="0.1" y2="0" stroke="var(--border)" strokeWidth="0.002" />
+          <line x1="0" y1="0" x2="0" y2="0.1" stroke="var(--border)" strokeWidth="0.002" />
+        </pattern>
+      </defs>
+
+      <rect x="-10" y="-10" width="20" height="20" fill="url(#graph-paper)" pointerEvents="none" />
+
       {/* Completed cells */}
       {board.cells.map((cell) => {
         const cellState = state.cells.get(cell.id);
@@ -234,7 +251,7 @@ export function BoardRenderer({ board }: BoardRendererProps) {
         );
       })}
 
-      {/* Claimed edges only */}
+      {/* All claimable edges (for hover zones & backgrounds) */}
       {board.edges
         .filter((e) => e.claimable)
         .map((edge) => {
@@ -245,28 +262,28 @@ export function BoardRenderer({ board }: BoardRendererProps) {
           const edgeState = state.edges.get(edge.id);
           const isClaimed = edgeState?.owner != null;
           const isPending = pendingEdge === edge.id;
-
-          if (!isClaimed && !isPending) return null;
+          const isHovered = hoverEdge === edge.id;
+          const isLastMove = lastMoveId === edge.id;
 
           const owner = isClaimed
             ? state.players.find((p) => p.id === edgeState.owner)
             : null;
 
-          let strokeColor: string;
-          let strokeWidth: number;
+          let strokeColor = "transparent";
+          let strokeWidth = 0.016;
           let opacity = 1;
           let edgeClass = styles.edge;
-
+          
           if (isClaimed && owner) {
             strokeColor = PLAYER_COLORS[owner.color];
-            strokeWidth = 0.014;
+            if (isLastMove) {
+              strokeWidth = 0.024; // Thicker for last move
+            }
             edgeClass = `${styles.edge} ${styles.edgeDrawn || ""}`;
-          } else {
-            // pending
+          } else if (isPending || isHovered) {
             strokeColor = currentColor;
-            strokeWidth = 0.014;
-            opacity = 0.5;
-            edgeClass = `${styles.edge} ${styles.edgePending || ""}`;
+            opacity = 0.3;
+            edgeClass = `${styles.edge} ${isPending ? styles.edgePending : ""}`;
           }
 
           return (
@@ -284,8 +301,8 @@ export function BoardRenderer({ board }: BoardRendererProps) {
           );
         })}
 
-      {/* Drag preview line */}
-      {dragVertex && pointerPos && (() => {
+      {/* Drag preview line (freeform fallback) */}
+      {dragVertex && pointerPos && !hoverEdge && (() => {
         const vA = vertexPos.get(dragVertex);
         if (!vA) return null;
         return (
@@ -293,15 +310,15 @@ export function BoardRenderer({ board }: BoardRendererProps) {
             x1={vA.x} y1={vA.y}
             x2={pointerPos.x} y2={pointerPos.y}
             stroke={currentColor}
-            strokeWidth={0.01}
+            strokeWidth={0.012}
             strokeLinecap="round"
-            opacity={0.4}
+            opacity={0.2}
             pointerEvents="none"
           />
         );
       })()}
 
-      {/* Vertices — just dots */}
+      {/* Vertices */}
       {board.vertices.map((vertex) => {
         const isDragSource = dragVertex === vertex.id;
 

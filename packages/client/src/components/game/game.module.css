@@ -1,222 +1,154 @@
 .hud {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  padding: 16px;
+  height: 100%;
 }
 
-/* Top bar */
 .topBar {
+  padding: 24px;
+  border-bottom: 2px solid var(--text);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  pointer-events: auto;
 }
 
 .boardInfo {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-
-.boardName {
-  font-weight: 500;
-  color: var(--text);
-}
-
-.separator {
-  color: var(--text-tertiary);
-}
-
-.cellCount {
-  font-variant-numeric: tabular-nums;
+  font-family: var(--font-display);
+  font-size: 20px;
+  text-transform: uppercase;
 }
 
 .leaveBtn {
   font-size: 13px;
-  color: var(--text-tertiary);
-  padding: 6px 12px;
-  border-radius: var(--radius-sm);
-  transition:
-    color var(--duration-fast) var(--ease-out),
-    background var(--duration-fast) var(--ease-out);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 8px;
 }
 
 .leaveBtn:hover {
-  color: var(--text);
-  background: var(--bg-hover);
+  text-decoration: underline;
 }
 
-/* Bottom bar */
-.bottomBar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  pointer-events: auto;
-  gap: 16px;
-}
-
-/* Scores */
 .scores {
   display: flex;
+  flex-direction: column;
+  padding: 24px;
   gap: 16px;
+  border-bottom: 2px solid var(--text);
 }
 
 .playerScore {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: var(--text-secondary);
-  padding: 6px 10px;
-  border-radius: var(--radius-sm);
-  transition:
-    background var(--duration-fast) var(--ease-out),
-    color var(--duration-fast) var(--ease-out);
+  justify-content: space-between;
+  padding: 12px;
+  border: 1px solid transparent;
+  transition: border-color var(--duration-fast) var(--ease-out);
 }
 
 .playerScore.active {
-  background: var(--bg-hover);
-  color: var(--text);
+  border: 1px solid var(--text);
+}
+
+.playerLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .playerDot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
 }
 
 .playerName {
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .score {
-  font-variant-numeric: tabular-nums;
+  font-family: var(--font-display);
+  font-size: 24px;
   font-weight: 600;
-  min-width: 16px;
-  text-align: right;
 }
 
-/* Turn indicator */
 .turnIndicator {
+  padding: 16px 24px;
+  background: var(--text);
+  color: var(--bg);
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-
-.turnDot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  animation: pulse 2s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
-}
-
-.turnText {
-  font-weight: 500;
-}
-
-/* Mobile */
-@media (max-width: 600px) {
-  .hud {
-    padding: 12px;
-  }
-
-  .scores {
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  .playerScore {
-    font-size: 12px;
-    padding: 4px 8px;
-  }
-
-  .playerName {
-    display: none;
-  }
-
-  .bottomBar {
-    flex-direction: column;
-    gap: 8px;
-  }
+  justify-content: space-between;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .turnTimer {
-  font-size: 13px;
-  color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
-  background: var(--bg-hover);
-  padding: 4px 8px;
-  border-radius: var(--radius-sm);
 }
 
 .chatPanel {
-  position: absolute;
-  right: 16px;
-  bottom: 80px;
-  width: 280px;
-  max-height: 300px;
-  background: var(--bg-panel);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  flex: 1;
   display: flex;
   flex-direction: column;
-  pointer-events: auto;
-  box-shadow: var(--shadow-md);
   overflow: hidden;
 }
 
 .chatMessages {
   flex: 1;
   overflow-y: auto;
-  padding: 12px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 
 .chatMessage {
   font-size: 13px;
-  color: var(--text);
+  padding: 8px 12px;
   background: var(--bg-hover);
-  padding: 6px 10px;
-  border-radius: var(--radius-sm);
   align-self: flex-start;
   word-break: break-word;
+  max-width: 90%;
+  border-left: 2px solid var(--text);
 }
 
 .chatForm {
   display: flex;
-  border-top: 1px solid var(--border);
-  padding: 8px;
-  gap: 8px;
+  border-top: 2px solid var(--text);
 }
 
 .chatInput {
   flex: 1;
   background: transparent;
   border: none;
+  padding: 16px;
   color: var(--text);
-  font-size: 13px;
+  font-size: 14px;
   outline: none;
 }
 
+.chatInput::placeholder {
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+}
+
 .chatButton {
-  font-size: 13px;
-  color: var(--accent);
-  font-weight: 500;
+  padding: 16px 24px;
+  font-weight: 600;
+  text-transform: uppercase;
+  border-left: 2px solid var(--text);
+  background: transparent;
   cursor: pointer;
+}
+
+.chatButton:hover {
+  background: var(--text);
+  color: var(--bg);
 }

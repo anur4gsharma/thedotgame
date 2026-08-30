@@ -4,7 +4,6 @@ import { BoardRenderer } from "./components/board/BoardRenderer";
 import { GameHUD } from "./components/game/GameHUD";
 import { GameOverModal } from "./components/game/GameOverModal";
 import { Lobby } from "./components/lobby/Lobby";
-import { ThemeToggle } from "./components/ui/ThemeToggle";
 import { Toast } from "./components/ui/Toast";
 import styles from "./App.module.css";
 
@@ -15,17 +14,19 @@ export function App() {
 
   return (
     <div className={styles.app}>
-      <ThemeToggle />
-
       {phase === "menu" && <MainMenu />}
 
       {phase === "lobby" && <Lobby />}
 
       {(phase === "playing" || phase === "gameover") && board && (
         <div className={styles.gameContainer}>
-          <BoardRenderer board={board} />
-          <GameHUD />
-          {phase === "gameover" && <GameOverModal />}
+          <div className={styles.boardSection}>
+            <BoardRenderer board={board} />
+          </div>
+          <div className={styles.railSection}>
+            <GameHUD />
+            {phase === "gameover" && <GameOverModal />}
+          </div>
         </div>
       )}
 

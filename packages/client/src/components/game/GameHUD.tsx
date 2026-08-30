@@ -1,6 +1,8 @@
 import { useGameStore } from "../../store/game-store";
 import type { PlayerColor } from "@dots-game/shared";
 import styles from "./game.module.css";
+import { TurnTimer } from "./TurnTimer";
+import { ChatPanel } from "./ChatPanel";
 
 const COLOR_VAR: Record<PlayerColor, string> = {
   blue: "var(--player-blue)",
@@ -8,10 +10,6 @@ const COLOR_VAR: Record<PlayerColor, string> = {
   green: "var(--player-green)",
   orange: "var(--player-orange)",
 };
-
-
-import { TurnTimer } from "./TurnTimer";
-import { ChatPanel } from "./ChatPanel";
 
 export function GameHUD() {
   const state = useGameStore((s) => s.state);
@@ -22,64 +20,49 @@ export function GameHUD() {
   if (!state || !board) return null;
 
   const currentPlayer = state.players[state.currentPlayerIndex];
-  const totalCells = board.cells.length;
-  const claimedCells = Array.from(state.cells.values()).filter(
-    (cell) => cell.owner !== null,
-  ).length;
+  const isGameOver = state.status === "completed";
 
   return (
     <div className={styles.hud}>
-      {/* Top bar */}
       <div className={styles.topBar}>
         <div className={styles.boardInfo}>
-          <span className={styles.boardName}>{board.name}</span>
-          <span className={styles.separator}>·</span>
-          <span className={styles.cellCount}>
-            {claimedCells}/{totalCells}
-          </span>
+          {board.name}
         </div>
         <button className={styles.leaveBtn} onClick={resetGame}>
-          Leave
+          Leave Match
         </button>
       </div>
 
-      {/* Bottom bar */}
-      <div className={styles.bottomBar}>
-        {/* Scores */}
-        <div className={styles.scores}>
-          {state.players.map((player) => {
-            const score = state.scores.get(player.id) || 0;
-            const isCurrent = player.id === currentPlayer.id;
+      <div className={styles.scores}>
+        {state.players.map((player) => {
+          const score = state.scores.get(player.id) || 0;
+          const isCurrent = player.id === currentPlayer.id && !isGameOver;
 
-            return (
-              <div
-                key={player.id}
-                className={`${styles.playerScore} ${isCurrent ? styles.active : ""}`}
-              >
+          return (
+            <div
+              key={player.id}
+              className={`${styles.playerScore} ${isCurrent ? styles.active : ""}`}
+            >
+              <div className={styles.playerLeft}>
                 <div
                   className={styles.playerDot}
                   style={{ background: COLOR_VAR[player.color] }}
                 />
                 <span className={styles.playerName}>{player.name}</span>
-                <span className={styles.score}>{score}</span>
               </div>
-            );
-          })}
-        </div>
-
-        {/* Turn indicator */}
-        <div className={styles.turnIndicator}>
-          {mode === "multiplayer" && <TurnTimer />}
-          <div
-            className={styles.turnDot}
-            style={{ background: COLOR_VAR[currentPlayer.color] }}
-          />
-          <span className={styles.turnText}>
-            {currentPlayer.name}'s turn
-          </span>
-        </div>
+              <span className={styles.score}>{score}</span>
+            </div>
+          );
+        })}
       </div>
-      
+
+      {!isGameOver && (
+        <div className={styles.turnIndicator}>
+          <span>{currentPlayer.name}'S TURN</span>
+          {mode === "multiplayer" && <TurnTimer />}
+        </div>
+      )}
+
       {mode === "multiplayer" && <ChatPanel />}
     </div>
   );

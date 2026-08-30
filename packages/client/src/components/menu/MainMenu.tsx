@@ -2,18 +2,14 @@ import { useState, useEffect } from "react";
 import { useGameStore } from "../../store/game-store";
 import styles from "./menu.module.css";
 
-// ─── Constants ──────────────────────────────────────────
-
 const MIN_SIZE = 3;
 const MAX_SIZE = 10;
-
-// ─── Main Menu ──────────────────────────────────────────
 
 export function MainMenu() {
   const [playerName, setPlayerName] = useState("Player");
   const [boardSize, setBoardSize] = useState(5);
   const [joinCode, setJoinCode] = useState("");
-  const [view, setView] = useState<"home" | "join">("home");
+  const [activeSection, setActiveSection] = useState<"none" | "play" | "join" | "local">("none");
 
   const startLocalGame = useGameStore((s) => s.startLocalGame);
   const createRoom = useGameStore((s) => s.createRoom);
@@ -21,13 +17,12 @@ export function MainMenu() {
   const setStoreName = useGameStore((s) => s.setPlayerName);
   const error = useGameStore((s) => s.error);
 
-  // Check URL for room code on mount
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const room = params.get("room");
     if (room) {
       setJoinCode(room.toUpperCase());
-      setView("join");
+      setActiveSection("join");
     }
   }, []);
 
@@ -40,7 +35,7 @@ export function MainMenu() {
 
   const handleCreateRoom = () => {
     setStoreName(playerName);
-    createRoom(boardId, boardSize, 4);
+    createRoom(boardId, boardSize, 2); // strictly 2 players now
   };
 
   const handleJoin = () => {
@@ -49,99 +44,117 @@ export function MainMenu() {
     joinRoom(joinCode.trim());
   };
 
+  const toggleSection = (section: "play" | "join" | "local") => {
+    setActiveSection(activeSection === section ? "none" : section);
+  };
+
   return (
     <div className={styles.menu}>
       <div className={styles.content}>
-        {/* Logo */}
         <div className={styles.logo}>
-          <div className={styles.logoDots}>
-            <span className={styles.dot1} />
-            <span className={styles.dot2} />
-            <span className={styles.dot3} />
-          </div>
-          <h1 className={styles.title}>Dots</h1>
-          <p className={styles.subtitle}>Connect the dots, claim the boxes</p>
+          <h1 className={styles.title}>THE DOT GAME</h1>
         </div>
 
-        {/* Name */}
-        <div className={styles.field}>
-          <label className={styles.label}>Your name</label>
-          <input
-            className={styles.input}
-            type="text"
-            value={playerName}
-            onChange={(e) => setPlayerName(e.target.value.slice(0, 20))}
-            maxLength={20}
-            placeholder="Enter name..."
-          />
-        </div>
-
-        {view === "home" ? (
-          <>
-            {/* Board size slider */}
-            <div className={styles.field}>
-              <label className={styles.label}>
-                Board size — {boardSize}×{boardSize}
-              </label>
-              <input
-                className={styles.slider}
-                type="range"
-                min={MIN_SIZE}
-                max={MAX_SIZE}
-                value={boardSize}
-                onChange={(e) => setBoardSize(Number(e.target.value))}
-              />
-              <div className={styles.sliderLabels}>
-                <span>{MIN_SIZE}×{MIN_SIZE}</span>
-                <span>{MAX_SIZE}×{MAX_SIZE}</span>
+        <div className={styles.nav}>
+          {/* PLAY ONLINE */}
+          <div>
+            <button className={styles.navItem} onClick={() => toggleSection("play")}>
+              <div className={styles.navTitle}>Play</div>
+              <div className={styles.navDesc}>Find an opponent</div>
+            </button>
+            {activeSection === "play" && (
+              <div className={styles.configArea}>
+                <div className={styles.field}>
+                  <label className={styles.label}>Your Call Sign</label>
+                  <input
+                    className={styles.input}
+                    value={playerName}
+                    onChange={(e) => setPlayerName(e.target.value.slice(0, 20))}
+                    placeholder="Enter name..."
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label className={styles.label}>Grid Size: {boardSize} × {boardSize}</label>
+                  <input
+                    className={styles.slider}
+                    type="range"
+                    min={MIN_SIZE}
+                    max={MAX_SIZE}
+                    value={boardSize}
+                    onChange={(e) => setBoardSize(Number(e.target.value))}
+                  />
+                </div>
+                <button className={styles.startBtn} onClick={handleCreateRoom}>
+                  Host Match
+                </button>
               </div>
-            </div>
+            )}
+          </div>
 
-            {/* Actions */}
-            <div className={styles.actions}>
-              <button className={styles.primaryBtn} onClick={handleLocalPlay}>
-                Play locally
-              </button>
-              <button className={styles.secondaryBtn} onClick={handleCreateRoom}>
-                Create room
-              </button>
-              <button className={styles.textBtn} onClick={() => setView("join")}>
-                Join a room
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            {/* Join room */}
-            <div className={styles.field}>
-              <label className={styles.label}>Room code</label>
-              <input
-                className={styles.input}
-                type="text"
-                value={joinCode}
-                onChange={(e) => setJoinCode(e.target.value.toUpperCase().slice(0, 6))}
-                maxLength={6}
-                placeholder="Enter 6-letter code..."
-                autoFocus
-              />
-            </div>
+          {/* JOIN */}
+          <div>
+            <button className={styles.navItem} onClick={() => toggleSection("join")}>
+              <div className={styles.navTitle}>Join</div>
+              <div className={styles.navDesc}>Enter a match code</div>
+            </button>
+            {activeSection === "join" && (
+              <div className={styles.configArea}>
+                <div className={styles.field}>
+                  <label className={styles.label}>Your Call Sign</label>
+                  <input
+                    className={styles.input}
+                    value={playerName}
+                    onChange={(e) => setPlayerName(e.target.value.slice(0, 20))}
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label className={styles.label}>Match Code</label>
+                  <input
+                    className={styles.input}
+                    value={joinCode}
+                    onChange={(e) => setJoinCode(e.target.value.toUpperCase().slice(0, 6))}
+                    placeholder="XXXXXX"
+                    autoFocus
+                  />
+                </div>
+                {error && <div className={styles.error}>{error}</div>}
+                <button 
+                  className={styles.startBtn} 
+                  onClick={handleJoin}
+                  disabled={joinCode.length < 4}
+                >
+                  Connect
+                </button>
+              </div>
+            )}
+          </div>
 
-            {error && <div className={styles.error}>{error}</div>}
-
-            <div className={styles.actions}>
-              <button
-                className={styles.primaryBtn}
-                onClick={handleJoin}
-                disabled={joinCode.length < 4}
-              >
-                Join game
-              </button>
-              <button className={styles.textBtn} onClick={() => setView("home")}>
-                ← Back
-              </button>
-            </div>
-          </>
-        )}
+          {/* LOCAL */}
+          <div>
+            <button className={styles.navItem} onClick={() => toggleSection("local")}>
+              <div className={styles.navTitle}>Local</div>
+              <div className={styles.navDesc}>Play on this device</div>
+            </button>
+            {activeSection === "local" && (
+              <div className={styles.configArea}>
+                <div className={styles.field}>
+                  <label className={styles.label}>Grid Size: {boardSize} × {boardSize}</label>
+                  <input
+                    className={styles.slider}
+                    type="range"
+                    min={MIN_SIZE}
+                    max={MAX_SIZE}
+                    value={boardSize}
+                    onChange={(e) => setBoardSize(Number(e.target.value))}
+                  />
+                </div>
+                <button className={styles.startBtn} onClick={handleLocalPlay}>
+                  Start Local Match
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
