@@ -61,6 +61,10 @@ interface GameStore {
   joinRoom: (roomCode: string) => void;
   startMultiplayerGame: () => void;
   makeMultiplayerMove: (edgeId: string) => void;
+  
+  // Chat
+  chatMessages: import("@dots-game/shared").ChatMessageServer[];
+  sendChatMessage: (msg: string) => void;
 
   // WebSocket handlers
   handleServerMessage: (msg: any) => void;
@@ -88,10 +92,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
   gameResults: null,
   error: null,
   myRating: 1000,
+  chatMessages: [],
 
   setPlayerName: (name) => set({ playerName: name }),
   setMode: (mode) => set({ mode }),
   setConnected: (connected) => set({ connected }),
+
+  sendChatMessage: (msg) => {
+    const socket = getSocket();
+    if (get().mode === "multiplayer") {
+      socket.send({ type: "chat_message", message: msg });
+    }
+  },
 
   // ─── Local Game ───────────────────────────────────────
 
@@ -157,16 +169,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
     socket.connect();
     set({ mode: "multiplayer", error: null });
 
-    if ((window as any).__wsUnsub) {
-      (window as any).__wsUnsub();
-    }
-    const unsubscribe = socket.onMessage((msg) => {
-      get().handleServerMessage(msg);
-    });
-
-    // Store unsubscribe for cleanup
-    (window as any).__wsUnsub = unsubscribe;
-
     socket.send({
       type: "create_game",
       boardId,
@@ -180,15 +182,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const socket = getSocket();
     socket.connect();
     set({ mode: "multiplayer", error: null });
-
-    if ((window as any).__wsUnsub) {
-      (window as any).__wsUnsub();
-    }
-    const unsubscribe = socket.onMessage((msg) => {
-      get().handleServerMessage(msg);
-    });
-
-    (window as any).__wsUnsub = unsubscribe;
 
     socket.send({
       type: "join_game",
@@ -369,6 +362,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
         break;
       }
 
+      case "chat_message": {
+        set((s) => ({ chatMessages: [...s.chatMessages, msg] }));
+        break;
+      }
+
       case "error": {
         set({ error: msg.message, pendingEdge: null });
         break;
@@ -386,7 +384,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     socket.disconnect();
 
     set({
-      phase: "menu",
+      phase: "start",
       board: null,
       runtime: null,
       state: null,
@@ -397,6 +395,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
       isHost: false,
       gameResults: null,
       error: null,
+      chatMessages: [],
     });
   },
 }));
+
+// Initialize WebSocket singleton listener
+getSocket().onMessage((msg) => {
+  useGameStore.getState().handleServerMessage(msg);
+});

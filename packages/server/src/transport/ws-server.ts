@@ -214,6 +214,37 @@ export function createWsServer(roomManager: RoomManager) {
         send(ws, { type: "pong", timestamp: msg.timestamp });
         break;
       }
+
+      case "chat_message": {
+        if (!state.roomCode) {
+          send(ws, { type: "error", code: "NOT_IN_ROOM", message: "Not in a room" });
+          return;
+        }
+
+        const text = msg.message?.trim();
+        if (!text || text.length === 0 || text.length > 250) {
+          send(ws, { type: "error", code: "INVALID_CHAT", message: "Invalid chat message length" });
+          return;
+        }
+
+        // Apply simple rate limiting (max 5 per 2 seconds)
+        const now = Date.now();
+        state.moveTimestamps = state.moveTimestamps.filter(t => now - t < 2000);
+        if (state.moveTimestamps.length >= 5) {
+          send(ws, { type: "error", code: "RATE_LIMITED", message: "Chat rate limited" });
+          return;
+        }
+        state.moveTimestamps.push(now);
+
+        broadcast(state.roomCode, {
+          type: "chat_message",
+          playerId: state.playerId,
+          playerName: state.playerName,
+          message: text,
+          timestamp: now,
+        });
+        break;
+      }
     }
   }
 

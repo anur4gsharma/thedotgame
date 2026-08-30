@@ -6,8 +6,10 @@ export function Lobby() {
   const lobbyState = useGameStore((s) => s.lobbyState);
   const roomCode = useGameStore((s) => s.roomCode);
   const isHost = useGameStore((s) => s.isHost);
+  const myPlayerId = useGameStore((s) => s.playerId);
   const startMultiplayerGame = useGameStore((s) => s.startMultiplayerGame);
   const resetGame = useGameStore((s) => s.resetGame);
+  const connected = useGameStore((s) => s.connected);
 
   if (!lobbyState || !roomCode) return null;
 
@@ -33,20 +35,22 @@ export function Lobby() {
   };
 
   const isReady = lobbyState.players.length === lobbyState.maxPlayers;
+  const opponent = lobbyState.players.find(p => p.id !== myPlayerId);
+  const hostPlayer = lobbyState.players.find(p => p.id === lobbyState.hostId);
 
   return (
     <div className={styles.lobby}>
       <div className={styles.content}>
         <div className={styles.header}>
-          THE DOT GAME
+          THE DOT GAME <span style={{fontSize: '0.5em', opacity: 0.7, verticalAlign: 'middle', marginLeft: '0.5rem'}}>[{isHost ? 'HOST' : 'GUEST'}]</span>
         </div>
 
         <div className={styles.matchmaking}>
           <div className={styles.status}>
-            {isReady ? "MATCH FOUND" : "LOOKING FOR AN OPPONENT"}
+            {!connected ? "RECONNECTING..." : isReady ? "MATCH READY" : "LOOKING FOR OPPONENT"}
           </div>
 
-          {!isReady && (
+          {!isReady && connected && (
             <div className={styles.dotGrid}>
               {Array.from({ length: 9 }).map((_, i) => (
                 <div key={i} className={styles.dot} />
@@ -54,8 +58,16 @@ export function Lobby() {
             </div>
           )}
 
-          <div className={styles.players}>
-            {lobbyState.players.length} / {lobbyState.maxPlayers} PLAYERS WAITING
+          <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%', alignItems: 'center' }}>
+            <div style={{ padding: '1rem', border: '2px solid var(--ink)', width: '100%', textAlign: 'center', background: 'var(--ink)', color: 'var(--paper)', fontWeight: 'bold', textTransform: 'uppercase' }}>
+              {isHost ? lobbyState.players.find(p => p.id === myPlayerId)?.name : hostPlayer?.name || "HOST"}
+            </div>
+            
+            <div style={{ fontWeight: 'bold' }}>VS</div>
+
+            <div style={{ padding: '1rem', border: '2px dashed var(--ink)', width: '100%', textAlign: 'center', color: opponent ? 'inherit' : 'var(--muted)', textTransform: 'uppercase' }}>
+              {isHost ? (opponent ? opponent.name : "WAITING...") : (lobbyState.players.find(p => p.id === myPlayerId)?.name)}
+            </div>
           </div>
 
           <div className={styles.divider} />
@@ -82,18 +94,18 @@ export function Lobby() {
             <button
               className={styles.startBtn}
               onClick={startMultiplayerGame}
-              disabled={!isReady}
+              disabled={!isReady || !connected}
             >
-              {isReady ? "ENTER MATCH" : "WAITING FOR PLAYERS"}
+              {isReady ? "ENTER MATCH" : "WAITING FOR OPPONENT"}
             </button>
           ) : (
-            <button className={styles.startBtn} disabled>
-              WAITING FOR HOST
+            <button className={styles.startBtn} disabled style={{ opacity: 0.8 }}>
+              {isReady ? "WAITING FOR HOST TO START" : "WAITING FOR HOST"}
             </button>
           )}
           
           <button className={styles.cancelBtn} onClick={resetGame}>
-            CANCEL
+            LEAVE
           </button>
         </div>
       </div>

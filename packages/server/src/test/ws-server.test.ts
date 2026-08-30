@@ -176,4 +176,44 @@ describe("WebSocket Server", () => {
       expect.stringContaining('"code":"RATE_LIMITED"')
     );
   });
+
+  it("should handle chat messages and rate limiting", () => {
+    const ws = new WebSocket(null as any);
+    const req = { headers: {}, socket: { remoteAddress: "127.0.0.1" } };
+    wss.emit("connection", ws, req);
+
+    // Join room
+    (ws as any).emit("message", JSON.stringify({ 
+      type: "create_game", 
+      boardId: "square-3x3", 
+      playerName: "Alice", 
+      maxPlayers: 2 
+    }));
+
+    const roomCodeCall = (ws as any).send.mock.calls.find((c: any) => c[0].includes("game_created"));
+    const roomCode = JSON.parse(roomCodeCall[0]).roomCode;
+
+    // Send valid chat
+    (ws as any).emit("message", JSON.stringify({
+      type: "chat_message",
+      message: "Hello world"
+    }));
+
+    // Expect it to broadcast (since host is the only one in room, it broadcasts to itself here because we didn't mock a second client in broadcast logic, actually broadcast sends to all players in room)
+    expect((ws as any).send).toHaveBeenCalledWith(
+      expect.stringContaining('"message":"Hello world"')
+    );
+
+    // Spam chat
+    for (let i = 0; i < 6; i++) {
+      (ws as any).emit("message", JSON.stringify({
+        type: "chat_message",
+        message: "Spam"
+      }));
+    }
+
+    expect((ws as any).send).toHaveBeenCalledWith(
+      expect.stringContaining('"code":"RATE_LIMITED"')
+    );
+  });
 });
