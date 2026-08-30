@@ -2,13 +2,13 @@
   width: 100%;
   height: 100%;
   display: block;
-  animation: boardIn 400ms var(--ease-out);
+  animation: boardIn 300ms var(--ease-out);
 }
 
 @keyframes boardIn {
   from {
     opacity: 0;
-    transform: scale(0.96);
+    transform: scale(0.97);
   }
   to {
     opacity: 1;
@@ -24,77 +24,31 @@
     opacity var(--duration-fast) var(--ease-out);
 }
 
-/* Hit area */
-.hitArea {
-  cursor: pointer;
-  outline: none;
-  transition: opacity var(--duration-fast) var(--ease-out);
-}
-
-.hitArea:hover ~ .edge {
-  stroke: var(--edge-hover);
-  stroke-width: 0.016;
-}
-
-.hitArea:focus-visible {
-  stroke: var(--accent);
-  stroke-width: 0.04;
-  opacity: 0.3;
-}
-
 /* Cell fill animation */
 .cellFill {
   animation: cellAppear var(--duration-slow) var(--ease-out);
 }
 
 @keyframes cellAppear {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-/* Vertex pulse on connection */
+/* Vertex */
 .vertex {
-  transition:
-    r var(--duration-normal) var(--ease-out),
-    fill var(--duration-normal) var(--ease-out);
-}
-
-/* Pending edge shimmer */
-@keyframes shimmer {
-  0%, 100% { opacity: 0.7; }
-  50% { opacity: 0.4; }
-}
-
-.edgePending {
-  animation: shimmer 1s ease-in-out infinite;
-}
-
-/* Drag preview */
-.dragPreview {
-  animation: dragPulse 0.6s ease-in-out infinite;
-}
-
-@keyframes dragPulse {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 0.3; }
-}
-
-/* Draggable vertex */
-.vertexDraggable {
-  cursor: grab;
   transition:
     r var(--duration-fast) var(--ease-out),
     fill var(--duration-fast) var(--ease-out);
 }
 
-.vertexDraggable:active {
-  cursor: grabbing;
+/* Pending edge shimmer */
+@keyframes shimmer {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.3; }
+}
+
+.edgePending {
+  animation: shimmer 1s ease-in-out infinite;
 }
 
 @keyframes edgeDraw {
@@ -113,16 +67,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .board, .cellFill, .edgePending, .dragPreview, .edgeDrawn {
+  .board, .cellFill, .edgePending, .edgeDrawn {
     animation: none !important;
   }
-  .edge, .vertex, .vertexDraggable, .hitArea {
+  .edge, .vertex {
     transition: none !important;
-  }
-}
-
-@media (prefers-contrast: more) {
-  .edge {
-    stroke-width: 0.024 !important;
   }
 }

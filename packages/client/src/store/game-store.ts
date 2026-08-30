@@ -8,39 +8,16 @@ import {
   type LobbyState,
   type GameResult,
   generateSquareBoard,
-  generateTriangleBoard,
-  generateHexagonBoard,
-  generateOctagonBoard,
 } from "@dots-game/shared";
 import { getSocket } from "../lib/websocket";
 import { sound } from "../lib/sound";
 import { haptics } from "../lib/haptics";
 
-// ─── Available Boards ───────────────────────────────────
+// ─── Board Generation ───────────────────────────────────
 
-export const AVAILABLE_BOARDS: BoardDefinition[] = [
-  // Square
-  generateSquareBoard(3, 3, "square-3x3", "3×3"),
-  generateSquareBoard(4, 4, "square-4x4", "4×4"),
-  generateSquareBoard(5, 5, "square-5x5", "5×5"),
-  generateSquareBoard(6, 6, "square-6x6", "6×6"),
-  generateSquareBoard(7, 7, "square-7x7", "7×7"),
-  generateSquareBoard(8, 8, "square-8x8", "8×8"),
-
-  // Triangle
-  generateTriangleBoard(3, "triangle-3", "△ 3"),
-  generateTriangleBoard(4, "triangle-4", "△ 4"),
-  generateTriangleBoard(5, "triangle-5", "△ 5"),
-  generateTriangleBoard(6, "triangle-6", "△ 6"),
-
-  // Hexagon
-  generateHexagonBoard(2, "hexagon-2", "⬡ 2"),
-  generateHexagonBoard(3, "hexagon-3", "⬡ 3"),
-
-  // Octagon
-  generateOctagonBoard(2, "octagon-2", "⬠ 2"),
-  generateOctagonBoard(3, "octagon-3", "⬠ 3"),
-];
+function makeBoardFromId(boardId: string, size: number): BoardDefinition {
+  return generateSquareBoard(size, size, boardId, `${size}×${size}`);
+}
 
 // ─── Game Phase ─────────────────────────────────────────
 
@@ -76,11 +53,11 @@ interface GameStore {
   setMode: (mode: "local" | "multiplayer") => void;
 
   // Local game
-  startLocalGame: (boardId: string, playerCount: 2 | 3 | 4) => void;
+  startLocalGame: (boardId: string, size: number, playerCount: 2 | 3 | 4) => void;
   makeLocalMove: (edgeId: string) => void;
 
   // Multiplayer
-  createRoom: (boardId: string, maxPlayers: number) => void;
+  createRoom: (boardId: string, size: number, maxPlayers: number) => void;
   joinRoom: (roomCode: string) => void;
   startMultiplayerGame: () => void;
   makeMultiplayerMove: (edgeId: string) => void;
@@ -118,10 +95,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   // ─── Local Game ───────────────────────────────────────
 
-  startLocalGame: (boardId, playerCount) => {
-    const board = AVAILABLE_BOARDS.find((b) => b.id === boardId);
-    if (!board) return;
-
+  startLocalGame: (boardId, size, playerCount) => {
+    const board = makeBoardFromId(boardId, size);
     const runtime = buildBoardRuntime(board);
     const { playerName } = get();
     const players = Array.from({ length: playerCount }, (_, i) =>
@@ -177,7 +152,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   // ─── Multiplayer ──────────────────────────────────────
 
-  createRoom: (boardId, maxPlayers) => {
+  createRoom: (boardId, size, maxPlayers) => {
     const socket = getSocket();
     socket.connect();
     set({ mode: "multiplayer", error: null });
@@ -192,6 +167,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     socket.send({
       type: "create_game",
       boardId,
+      boardSize: size,
       maxPlayers,
       playerName: get().playerName,
     });
@@ -263,8 +239,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
       case "game_started": {
         const boardId = s.lobbyState?.boardId;
-        const board = AVAILABLE_BOARDS.find((b) => b.id === boardId);
-        if (!board) break;
+        if (!boardId) break;
+
+        // Extract size from boardId like "square-5x5"
+        const match = boardId.match(/(\d+)x(\d+)/);
+        const size = match ? parseInt(match[1], 10) : 5;
+        const board = makeBoardFromId(boardId, size);
 
         const runtime = buildBoardRuntime(board);
         const gameState = GameEngine.deserialize(msg.state);
@@ -341,8 +321,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
       }
 
       case "state_sync": {
-        const board = AVAILABLE_BOARDS.find((b) => b.id === msg.state.boardId);
-        if (!board) break;
+        const syncBoardId = msg.state.boardId;
+        const match = syncBoardId?.match(/(\d+)x(\d+)/);
+        const size = match ? parseInt(match[1], 10) : 5;
+        const board = makeBoardFromId(syncBoardId, size);
+
         const runtime = buildBoardRuntime(board);
         const gameState = GameEngine.deserialize(msg.state);
         set({

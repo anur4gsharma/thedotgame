@@ -10,10 +10,13 @@
   align-items: center;
   justify-content: center;
   padding: 56px 24px 100px;
+  max-width: 480px;
+  margin: 0 auto;
 }
 
 @media (max-width: 600px) {
   .gameContainer {
-    padding: 48px 12px 120px;
+    padding: 48px 16px 120px;
+    max-width: 360px;
   }
 }

@@ -2,7 +2,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { IncomingMessage } from "http";
 import { RoomManager } from "../rooms/room-manager.js";
 import { config } from "../config.js";
-import { AVAILABLE_BOARDS } from "../boards.js";
+import { getBoard } from "../boards.js";
 import { GameEngine } from "@dots-game/shared";
 import type { ClientMessage, ServerMessage } from "@dots-game/shared";
 
@@ -58,7 +58,7 @@ export function createWsServer(roomManager: RoomManager) {
   function handleMessage(ws: WebSocket, state: ConnectionState, msg: ClientMessage, ip: string) {
     switch (msg.type) {
       case "create_game": {
-        const board = AVAILABLE_BOARDS.find((b) => b.id === msg.boardId);
+        const board = getBoard(msg.boardId, msg.boardSize);
         if (!board) {
           send(ws, { type: "error", code: "INVALID_BOARD", message: "Invalid board" });
           return;

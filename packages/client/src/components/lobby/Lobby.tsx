@@ -1,4 +1,5 @@
-import { useGameStore, AVAILABLE_BOARDS } from "../../store/game-store";
+import { useGameStore } from "../../store/game-store";
+import { generateSquareBoard } from "@dots-game/shared";
 import { LoadingSpinner } from "../ui/LoadingSpinner";
 import { getRankTier } from "./elo-display";
 import styles from "./lobby.module.css";
@@ -20,7 +21,9 @@ export function Lobby() {
 
   if (!lobbyState || !roomCode) return null;
 
-  const board = AVAILABLE_BOARDS.find((b) => b.id === lobbyState.boardId);
+  const match = lobbyState.boardId.match(/(\d+)x(\d+)/);
+  const size = match ? parseInt(match[1], 10) : 5;
+  const board = generateSquareBoard(size, size, lobbyState.boardId, `${size}×${size}`);
   const shareUrl = `${window.location.origin}?room=${roomCode}`;
 
   const copyLink = async () => {
@@ -65,9 +68,9 @@ export function Lobby() {
         {/* Board info */}
         <div className={styles.boardInfo}>
           <span className={styles.boardLabel}>Board</span>
-          <span className={styles.boardName}>{board?.name || lobbyState.boardId}</span>
+          <span className={styles.boardName}>{board.name}</span>
           <span className={styles.boardCells}>
-            {board?.cells.length || 0} cells
+            {board.cells.length} cells
           </span>
         </div>
 

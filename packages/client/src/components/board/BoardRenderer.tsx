@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, useRef } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useGameStore } from "../../store/game-store";
 import type { BoardDefinition, PlayerColor } from "@dots-game/shared";
 import styles from "./board.module.css";
@@ -28,10 +28,9 @@ export function BoardRenderer({ board }: BoardRendererProps) {
   const makeMultiplayerMove = useGameStore((s) => s.makeMultiplayerMove);
   const mode = useGameStore((s) => s.mode);
 
-  const [hoveredEdge, setHoveredEdge] = useState<string | null>(null);
-  const [dragVertex, setDragVertex] = useState<string | null>(null);
-  const [dragOverVertex, setDragOverVertex] = useState<string | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+  const [dragVertex, setDragVertex] = useState<string | null>(null);
+  const [pointerPos, setPointerPos] = useState<{ x: number; y: number } | null>(null);
 
   // Compute viewBox
   const viewBox = useMemo(() => {
@@ -43,7 +42,7 @@ export function BoardRenderer({ board }: BoardRendererProps) {
       minY = Math.min(minY, v.y);
       maxY = Math.max(maxY, v.y);
     }
-    const pad = 0.08;
+    const pad = 0.06;
     return `${minX - pad} ${minY - pad} ${maxX - minX + pad * 2} ${maxY - minY + pad * 2}`;
   }, [board]);
 
@@ -54,7 +53,7 @@ export function BoardRenderer({ board }: BoardRendererProps) {
     return map;
   }, [board]);
 
-  // Build vertex→edges index for drag detection
+  // Build vertex→edges index
   const vertexEdges = useMemo(() => {
     const map = new Map<string, string[]>();
     for (const edge of board.edges) {
@@ -78,6 +77,11 @@ export function BoardRenderer({ board }: BoardRendererProps) {
     return map;
   }, [board]);
 
+  // Dot radius - small
+  const dotRadius = 0.012;
+  // Hit radius for touch/pointer detection
+  const hitRadius = 0.04;
+
   const commitMove = useCallback(
     (edgeId: string) => {
       if (mode === "local") makeLocalMove(edgeId);
@@ -86,7 +90,6 @@ export function BoardRenderer({ board }: BoardRendererProps) {
     [mode, makeLocalMove, makeMultiplayerMove],
   );
 
-  // Check if an edge connects two vertices
   const findEdge = useCallback(
     (v1: string, v2: string): string | null => {
       const edges1 = vertexEdges.get(v1) || [];
@@ -101,62 +104,97 @@ export function BoardRenderer({ board }: BoardRendererProps) {
     [vertexEdges, edgeVertices],
   );
 
-  // Click on edge (fallback for click users)
-  const handleEdgeClick = useCallback(
-    (edgeId: string) => {
-      if (!state) return;
-      const edgeState = state.edges.get(edgeId);
-      if (edgeState?.owner) return;
-      commitMove(edgeId);
+  // Convert screen coords to SVG coords
+  const toSVGCoords = useCallback(
+    (clientX: number, clientY: number): { x: number; y: number } | null => {
+      const svg = svgRef.current;
+      if (!svg) return null;
+      const pt = svg.createSVGPoint();
+      pt.x = clientX;
+      pt.y = clientY;
+      const ctm = svg.getScreenCTM();
+      if (!ctm) return null;
+      const svgPt = pt.matrixTransform(ctm.inverse());
+      return { x: svgPt.x, y: svgPt.y };
     },
-    [state, commitMove],
+    [],
   );
 
-  // Drag start on vertex
-  const handleVertexPointerDown = useCallback(
-    (vertexId: string, _e: React.PointerEvent) => {
-      if (!state) return;
-      setDragVertex(vertexId);
-      setDragOverVertex(null);
-    },
-    [state],
-  );
-
-  // Drag over vertex
-  const handleVertexPointerEnter = useCallback(
-    (vertexId: string) => {
-      if (dragVertex && vertexId !== dragVertex) {
-        setDragOverVertex(vertexId);
+  // Find closest vertex to a point
+  const findClosestVertex = useCallback(
+    (px: number, py: number, exclude?: string): string | null => {
+      let closest: string | null = null;
+      let minDist = hitRadius;
+      for (const v of board.vertices) {
+        if (v.id === exclude) continue;
+        const dx = v.x - px;
+        const dy = v.y - py;
+        const d = Math.sqrt(dx * dx + dy * dy);
+        if (d < minDist) {
+          minDist = d;
+          closest = v.id;
+        }
       }
+      return closest;
     },
-    [dragVertex],
+    [board, hitRadius],
   );
 
-  // Drag end — commit the move
+  // Pointer down on a vertex — start drag
+  const handlePointerDown = useCallback(
+    (vertexId: string, e: React.PointerEvent) => {
+      if (!state) return;
+      e.preventDefault();
+      (e.target as Element).setPointerCapture?.(e.pointerId);
+      setDragVertex(vertexId);
+      const pos = vertexPos.get(vertexId);
+      if (pos) setPointerPos({ x: pos.x, y: pos.y });
+    },
+    [state, vertexPos],
+  );
+
+  // Pointer move — update drag line
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (!dragVertex) return;
+      const svgPt = toSVGCoords(e.clientX, e.clientY);
+      if (svgPt) setPointerPos(svgPt);
+    },
+    [dragVertex, toSVGCoords],
+  );
+
+  // Pointer up — check if we landed on a neighbor vertex and commit
   const handlePointerUp = useCallback(
-    (_e: React.PointerEvent) => {
-      if (dragVertex && dragOverVertex) {
-        const edgeId = findEdge(dragVertex, dragOverVertex);
-        if (edgeId) {
-          const edgeState = state?.edges.get(edgeId);
-          if (edgeState && !edgeState.owner) {
-            commitMove(edgeId);
+    (e: React.PointerEvent) => {
+      if (!dragVertex || !state) {
+        setDragVertex(null);
+        setPointerPos(null);
+        return;
+      }
+
+      const svgPt = toSVGCoords(e.clientX, e.clientY);
+      if (svgPt) {
+        const target = findClosestVertex(svgPt.x, svgPt.y, dragVertex);
+        if (target) {
+          const edgeId = findEdge(dragVertex, target);
+          if (edgeId) {
+            const edgeState = state.edges.get(edgeId);
+            if (edgeState && !edgeState.owner) {
+              commitMove(edgeId);
+            }
           }
         }
       }
+
       setDragVertex(null);
-      setDragOverVertex(null);
+      setPointerPos(null);
     },
-    [dragVertex, dragOverVertex, findEdge, state, commitMove],
+    [dragVertex, state, toSVGCoords, findClosestVertex, findEdge, commitMove],
   );
 
   // Current player color
   const currentPlayer = state?.players[state?.currentPlayerIndex];
   const currentColor = currentPlayer ? PLAYER_COLORS[currentPlayer.color] : "var(--accent)";
-
-  // The edge being dragged (for preview)
-  const dragEdgeId = dragVertex && dragOverVertex ? findEdge(dragVertex, dragOverVertex) : null;
-  const dragEdgeState = dragEdgeId ? state?.edges.get(dragEdgeId) : null;
 
   if (!state) return null;
 
@@ -166,11 +204,12 @@ export function BoardRenderer({ board }: BoardRendererProps) {
       className={styles.board}
       viewBox={viewBox}
       preserveAspectRatio="xMidYMid meet"
+      onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
+      onPointerCancel={() => { setDragVertex(null); setPointerPos(null); }}
       style={{ touchAction: "none" }}
       role="application"
       aria-label="Dots and Boxes Game Board"
-      aria-live="polite"
     >
       {/* Completed cells */}
       {board.cells.map((cell) => {
@@ -195,26 +234,7 @@ export function BoardRenderer({ board }: BoardRendererProps) {
         );
       })}
 
-      {/* Drag preview line */}
-      {dragVertex && dragOverVertex && !dragEdgeState && (() => {
-        const vA = vertexPos.get(dragVertex);
-        const vB = vertexPos.get(dragOverVertex);
-        if (!vA || !vB) return null;
-        return (
-          <line
-            x1={vA.x} y1={vA.y}
-            x2={vB.x} y2={vB.y}
-            stroke={currentColor}
-            strokeWidth={0.02}
-            strokeLinecap="round"
-            opacity={0.5}
-            pointerEvents="none"
-            className={styles.dragPreview}
-          />
-        );
-      })()}
-
-      {/* Edges */}
+      {/* Claimed edges only */}
       {board.edges
         .filter((e) => e.claimable)
         .map((edge) => {
@@ -225,111 +245,76 @@ export function BoardRenderer({ board }: BoardRendererProps) {
           const edgeState = state.edges.get(edge.id);
           const isClaimed = edgeState?.owner != null;
           const isPending = pendingEdge === edge.id;
-          const isHovered = hoveredEdge === edge.id;
-          const isDragTarget = dragEdgeId === edge.id;
+
+          if (!isClaimed && !isPending) return null;
 
           const owner = isClaimed
             ? state.players.find((p) => p.id === edgeState.owner)
             : null;
 
-          let strokeColor = "var(--edge-default)";
-          let strokeWidth = 0.012;
+          let strokeColor: string;
+          let strokeWidth: number;
           let opacity = 1;
           let edgeClass = styles.edge;
 
           if (isClaimed && owner) {
             strokeColor = PLAYER_COLORS[owner.color];
-            strokeWidth = 0.018;
+            strokeWidth = 0.014;
             edgeClass = `${styles.edge} ${styles.edgeDrawn || ""}`;
-          } else if (isPending || isDragTarget) {
+          } else {
+            // pending
             strokeColor = currentColor;
-            strokeWidth = 0.02;
-            opacity = 0.6;
-            edgeClass = `${styles.edge} ${styles.edgePending || "edgePending"}`;
-          } else if (isHovered) {
-            strokeColor = "var(--edge-hover)";
-            strokeWidth = 0.016;
+            strokeWidth = 0.014;
+            opacity = 0.5;
+            edgeClass = `${styles.edge} ${styles.edgePending || ""}`;
           }
 
           return (
-            <g key={edge.id}>
-              {/* Hit area */}
-              {!isClaimed && (
-                <line
-                  x1={vA.x} y1={vA.y}
-                  x2={vB.x} y2={vB.y}
-                  stroke="transparent"
-                  strokeWidth={0.06}
-                  className={styles.hitArea}
-                  onClick={() => handleEdgeClick(edge.id)}
-                  onMouseEnter={() => setHoveredEdge(edge.id)}
-                  onMouseLeave={() => setHoveredEdge(null)}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`Edge ${edge.vertexA} to ${edge.vertexB}`}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      handleEdgeClick(edge.id);
-                    }
-                  }}
-                />
-              )}
-
-              {/* Visible line */}
-              <line
-                x1={vA.x} y1={vA.y}
-                x2={vB.x} y2={vB.y}
-                stroke={strokeColor}
-                strokeWidth={strokeWidth}
-                opacity={opacity}
-                strokeLinecap="round"
-                className={edgeClass}
-                pointerEvents="none"
-              />
-            </g>
+            <line
+              key={edge.id}
+              x1={vA.x} y1={vA.y}
+              x2={vB.x} y2={vB.y}
+              stroke={strokeColor}
+              strokeWidth={strokeWidth}
+              opacity={opacity}
+              strokeLinecap="round"
+              className={edgeClass}
+              pointerEvents="none"
+            />
           );
         })}
 
-      {/* Vertices (draggable dots) */}
+      {/* Drag preview line */}
+      {dragVertex && pointerPos && (() => {
+        const vA = vertexPos.get(dragVertex);
+        if (!vA) return null;
+        return (
+          <line
+            x1={vA.x} y1={vA.y}
+            x2={pointerPos.x} y2={pointerPos.y}
+            stroke={currentColor}
+            strokeWidth={0.01}
+            strokeLinecap="round"
+            opacity={0.4}
+            pointerEvents="none"
+          />
+        );
+      })()}
+
+      {/* Vertices — just dots */}
       {board.vertices.map((vertex) => {
-        const isConnectedToClaimed = board.edges.some((e) => {
-          if (e.vertexA !== vertex.id && e.vertexB !== vertex.id) return false;
-          return state.edges.get(e.id)?.owner != null;
-        });
-
         const isDragSource = dragVertex === vertex.id;
-        const isDragTargetVertex = dragOverVertex === vertex.id;
-        const isClaimable = (vertexEdges.get(vertex.id) || []).some((eid) => {
-          const es = state.edges.get(eid);
-          return es && !es.owner;
-        });
-
-        let r = isConnectedToClaimed ? 0.018 : 0.013;
-        let fill = "var(--vertex-default)";
-
-        if (isDragSource) {
-          r = 0.022;
-          fill = currentColor;
-        } else if (isDragTargetVertex) {
-          r = 0.02;
-          fill = currentColor;
-        } else if (isClaimable) {
-          // Slightly brighter for claimable vertices
-          fill = "var(--vertex-active)";
-        }
 
         return (
           <circle
             key={vertex.id}
             cx={vertex.x}
             cy={vertex.y}
-            r={r}
-            fill={fill}
-            className={`${styles.vertex} ${isClaimable ? styles.vertexDraggable : ""}`}
-            onPointerDown={(e) => handleVertexPointerDown(vertex.id, e)}
-            onPointerEnter={() => handleVertexPointerEnter(vertex.id)}
-            style={{ cursor: isClaimable ? "grab" : "default" }}
+            r={isDragSource ? dotRadius * 1.5 : dotRadius}
+            fill={isDragSource ? currentColor : "var(--vertex-default)"}
+            className={styles.vertex}
+            onPointerDown={(e) => handlePointerDown(vertex.id, e)}
+            style={{ cursor: "pointer" }}
           />
         );
       })}

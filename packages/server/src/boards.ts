@@ -1,42 +1,23 @@
 import {
   generateSquareBoard,
-  generateTriangleBoard,
-  generateHexagonBoard,
-  generateOctagonBoard,
   type BoardDefinition,
 } from "@dots-game/shared";
 
-/**
- * All available board definitions.
- * The server uses these to create games.
- */
-export const AVAILABLE_BOARDS: BoardDefinition[] = [
-  // Square boards
-  generateSquareBoard(3, 3, "square-3x3", "3×3 Square"),
-  generateSquareBoard(4, 4, "square-4x4", "4×4 Square"),
-  generateSquareBoard(5, 5, "square-5x5", "5×5 Square"),
-  generateSquareBoard(6, 6, "square-6x6", "6×6 Square"),
-  generateSquareBoard(7, 7, "square-7x7", "7×7 Square"),
-  generateSquareBoard(8, 8, "square-8x8", "8×8 Square"),
-
-  // Triangle boards
-  generateTriangleBoard(3, "triangle-3", "Triangle (3)"),
-  generateTriangleBoard(4, "triangle-4", "Triangle (4)"),
-  generateTriangleBoard(5, "triangle-5", "Triangle (5)"),
-  generateTriangleBoard(6, "triangle-6", "Triangle (6)"),
-
-  // Hexagonal boards
-  generateHexagonBoard(2, "hexagon-2", "Hexagon (2)"),
-  generateHexagonBoard(3, "hexagon-3", "Hexagon (3)"),
-
-  // Octagonal boards
-  generateOctagonBoard(2, "octagon-2", "Octagon (2)"),
-  generateOctagonBoard(3, "octagon-3", "Octagon (3)"),
-];
+const MIN_SIZE = 3;
+const MAX_SIZE = 10;
 
 /**
- * Get a board by ID.
+ * Generate a board dynamically from an ID and optional size.
+ * Supports IDs like "square-5x5".
  */
-export function getBoard(id: string): BoardDefinition | undefined {
-  return AVAILABLE_BOARDS.find((b) => b.id === id);
+export function getBoard(id: string, size?: number): BoardDefinition | undefined {
+  // Try to extract size from the ID
+  const match = id.match(/^square-(\d+)x(\d+)$/);
+  const cols = size ?? (match ? parseInt(match[1], 10) : undefined);
+  const rows = match ? parseInt(match[2], 10) : cols;
+
+  if (cols == null || rows == null) return undefined;
+  if (cols < MIN_SIZE || cols > MAX_SIZE || rows < MIN_SIZE || rows > MAX_SIZE) return undefined;
+
+  return generateSquareBoard(cols, rows, id, `${cols}×${rows}`);
 }

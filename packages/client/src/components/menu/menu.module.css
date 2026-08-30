@@ -9,7 +9,7 @@
 
 .content {
   width: 100%;
-  max-width: 420px;
+  max-width: 380px;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -87,53 +87,47 @@
   color: var(--text-tertiary);
 }
 
-/* Board selection */
-.boards {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+/* Slider */
+.slider {
+  width: 100%;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
 }
 
-.boardOption {
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--text);
+  cursor: grab;
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.slider::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.2);
+}
+
+.slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--text);
+  border: none;
+  cursor: grab;
+}
+
+.sliderLabels {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 10px 4px 8px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  transition: border-color var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out);
-}
-
-.boardOption:hover {
-  background: var(--bg-hover);
-}
-
-.boardOption.selected {
-  border-color: var(--accent);
-  background: var(--accent-dim);
-}
-
-.preview {
-  width: 44px;
-  height: 44px;
-}
-
-.boardName {
+  justify-content: space-between;
   font-size: 11px;
-  font-weight: 500;
-  color: var(--text-secondary);
-}
-
-.boardOption.selected .boardName {
-  color: var(--text);
-}
-
-.boardCells {
-  font-size: 10px;
   color: var(--text-tertiary);
-  font-variant-numeric: tabular-nums;
 }
 
 /* Actions */
@@ -199,16 +193,4 @@
   border-radius: var(--radius-md);
   color: #ef4444;
   font-size: 13px;
-}
-
-/* Mobile */
-@media (max-width: 600px) {
-  .boards {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
-  .preview {
-    width: 36px;
-    height: 36px;
-  }
 }
