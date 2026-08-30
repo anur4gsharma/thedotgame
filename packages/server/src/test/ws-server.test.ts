@@ -191,7 +191,8 @@ describe("WebSocket Server", () => {
     }));
 
     const roomCodeCall = (ws as any).send.mock.calls.find((c: any) => c[0].includes("game_created"));
-    const roomCode = JSON.parse(roomCodeCall[0]).roomCode;
+    // roomCode is not strictly needed for this test, just ensuring it was created
+    if (!roomCodeCall) throw new Error("No game_created message sent");
 
     // Send valid chat
     (ws as any).emit("message", JSON.stringify({
