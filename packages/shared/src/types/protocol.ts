@@ -9,7 +9,8 @@ export type ClientMessage =
   | ReconnectMessage
   | LeaveGameMessage
   | StartGameMessage
-  | PingMessage;
+  | PingMessage
+  | ChatMessageClient;
 
 export interface CreateGameMessage {
   type: "create_game";
@@ -50,6 +51,11 @@ export interface PingMessage {
   timestamp: number;
 }
 
+export interface ChatMessageClient {
+  type: "chat_message";
+  message: string;
+}
+
 // ─── Server → Client Messages ───────────────────────────
 
 export type ServerMessage =
@@ -64,7 +70,16 @@ export type ServerMessage =
   | GameOverMessage
   | LobbyStateMessage
   | ErrorMessage
-  | PongMessage;
+  | PongMessage
+  | ChatMessageServer;
+
+export interface ChatMessageServer {
+  type: "chat_message";
+  playerId: string;
+  playerName: string;
+  message: string;
+  timestamp: number;
+}
 
 export interface GameCreatedMessage {
   type: "game_created";
