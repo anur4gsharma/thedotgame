@@ -50,6 +50,9 @@ export class GameSocket {
 
     this.ws.onerror = () => {
       this._connected = false;
+      for (const handler of this.handlers) {
+        handler({ type: "error", code: "CONNECTION_FAILED", message: "Failed to connect to the game server. Please try again." });
+      }
     };
   }
 
@@ -95,10 +98,8 @@ let socketInstance: GameSocket | null = null;
 
 export function getSocket(): GameSocket {
   if (!socketInstance) {
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = window.location.hostname;
-    const port = "3001";
-    socketInstance = new GameSocket(`${protocol}//${host}:${port}`);
+    const wsUrl = import.meta.env.VITE_WS_URL || `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.hostname}:3001`;
+    socketInstance = new GameSocket(wsUrl);
   }
   return socketInstance;
 }

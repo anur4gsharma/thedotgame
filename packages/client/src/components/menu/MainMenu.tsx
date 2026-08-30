@@ -6,15 +6,14 @@ const MIN_SIZE = 3;
 const MAX_SIZE = 10;
 
 export function MainMenu() {
-  const [playerName, setPlayerName] = useState("Player");
   const [boardSize, setBoardSize] = useState(5);
   const [joinCode, setJoinCode] = useState("");
   const [activeSection, setActiveSection] = useState<"none" | "play" | "join" | "local">("none");
 
+  const playerName = useGameStore((s) => s.playerName);
   const startLocalGame = useGameStore((s) => s.startLocalGame);
   const createRoom = useGameStore((s) => s.createRoom);
   const joinRoom = useGameStore((s) => s.joinRoom);
-  const setStoreName = useGameStore((s) => s.setPlayerName);
   const error = useGameStore((s) => s.error);
 
   useEffect(() => {
@@ -29,18 +28,15 @@ export function MainMenu() {
   const boardId = `square-${boardSize}x${boardSize}`;
 
   const handleLocalPlay = () => {
-    setStoreName(playerName);
     startLocalGame(boardId, boardSize, 2);
   };
 
   const handleCreateRoom = () => {
-    setStoreName(playerName);
     createRoom(boardId, boardSize, 2); // strictly 2 players now
   };
 
   const handleJoin = () => {
     if (!joinCode.trim()) return;
-    setStoreName(playerName);
     joinRoom(joinCode.trim());
   };
 
@@ -48,11 +44,25 @@ export function MainMenu() {
     setActiveSection(activeSection === section ? "none" : section);
   };
 
+  const handleChangeName = () => {
+    useGameStore.setState({ phase: "start" });
+  };
+
   return (
     <div className={styles.menu}>
       <div className={styles.content}>
         <div className={styles.logo}>
           <h1 className={styles.title}>THE DOT GAME</h1>
+        </div>
+        
+        <div style={{ marginBottom: '32px', display: 'flex', alignItems: 'baseline', gap: '16px' }}>
+          <span style={{ fontSize: '18px', fontWeight: 600 }}>{playerName}</span>
+          <button 
+            onClick={handleChangeName}
+            style={{ fontSize: '12px', color: 'var(--text-secondary)', textDecoration: 'underline', textTransform: 'uppercase', cursor: 'pointer' }}
+          >
+            Change Name
+          </button>
         </div>
 
         <div className={styles.nav}>
@@ -65,15 +75,6 @@ export function MainMenu() {
             {activeSection === "play" && (
               <div className={styles.configArea}>
                 <div className={styles.field}>
-                  <label className={styles.label}>Your Call Sign</label>
-                  <input
-                    className={styles.input}
-                    value={playerName}
-                    onChange={(e) => setPlayerName(e.target.value.slice(0, 20))}
-                    placeholder="Enter name..."
-                  />
-                </div>
-                <div className={styles.field}>
                   <label className={styles.label}>Grid Size: {boardSize} × {boardSize}</label>
                   <input
                     className={styles.slider}
@@ -84,6 +85,7 @@ export function MainMenu() {
                     onChange={(e) => setBoardSize(Number(e.target.value))}
                   />
                 </div>
+                {error && <div className={styles.error}>{error}</div>}
                 <button className={styles.startBtn} onClick={handleCreateRoom}>
                   Host Match
                 </button>
@@ -99,14 +101,6 @@ export function MainMenu() {
             </button>
             {activeSection === "join" && (
               <div className={styles.configArea}>
-                <div className={styles.field}>
-                  <label className={styles.label}>Your Call Sign</label>
-                  <input
-                    className={styles.input}
-                    value={playerName}
-                    onChange={(e) => setPlayerName(e.target.value.slice(0, 20))}
-                  />
-                </div>
                 <div className={styles.field}>
                   <label className={styles.label}>Match Code</label>
                   <input

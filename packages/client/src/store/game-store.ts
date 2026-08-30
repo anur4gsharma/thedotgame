@@ -21,7 +21,7 @@ function makeBoardFromId(boardId: string, size: number): BoardDefinition {
 
 // ─── Game Phase ─────────────────────────────────────────
 
-export type GamePhase = "menu" | "lobby" | "playing" | "gameover";
+export type GamePhase = "start" | "menu" | "lobby" | "playing" | "gameover";
 
 // ─── Store State ────────────────────────────────────────
 
@@ -73,7 +73,7 @@ interface GameStore {
 // ─── Create Store ───────────────────────────────────────
 
 export const useGameStore = create<GameStore>((set, get) => ({
-  phase: "menu",
+  phase: "start",
   board: null,
   runtime: null,
   state: null,

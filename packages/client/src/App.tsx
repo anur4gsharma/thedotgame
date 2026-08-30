@@ -1,5 +1,6 @@
 import { useGameStore } from "./store/game-store";
 import { MainMenu } from "./components/menu/MainMenu";
+import { StartMenu } from "./components/menu/StartMenu";
 import { BoardRenderer } from "./components/board/BoardRenderer";
 import { GameHUD } from "./components/game/GameHUD";
 import { GameOverModal } from "./components/game/GameOverModal";
@@ -14,6 +15,8 @@ export function App() {
 
   return (
     <div className={styles.app}>
+      {phase === "start" && <StartMenu />}
+
       {phase === "menu" && <MainMenu />}
 
       {phase === "lobby" && <Lobby />}
