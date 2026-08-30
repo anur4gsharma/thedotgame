@@ -100,10 +100,10 @@ describe("Integration Flow", () => {
     expect(hostJoinMsg.type).toBe("player_joined");
     expect(hostJoinMsg.player.name).toBe("Guest");
 
-    // Guest should receive player_joined
+    // Guest should receive game_joined
     const guestJoinMsg = await nextMessage(guestWs);
-    expect(guestJoinMsg.type).toBe("player_joined");
-    const guestId = guestJoinMsg.player.id;
+    expect(guestJoinMsg.type).toBe("game_joined");
+    const guestId = guestJoinMsg.playerId;
 
     // 3. Start game
     hostWs.send(JSON.stringify({
