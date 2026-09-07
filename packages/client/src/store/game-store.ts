@@ -60,7 +60,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   requestState: () => getSocket().send(message("request_state", {})),
   rematch: () => { set({ error: "Rematch requested. Waiting for the other player…" }); getSocket().send(message("rematch", {})); },
   sendChatMessage: (msg) => { const clean = msg.trim(); if (clean) getSocket().send(message("send_chat", { message: clean.slice(0, 250), requestId: id() })); },
-  restoreSession: () => { const roomCode = storageGet(ROOM_KEY); if (!roomCode || !get().playerName) return; set({ mode: "multiplayer", roomCode, phase: "lobby" }); getSocket().connect(); },
+  restoreSession: () => { const inviteRoom = new URLSearchParams(window.location.search).get("room"); const roomCode = storageGet(ROOM_KEY); if (inviteRoom || !roomCode || !get().playerName) return; set({ mode: "multiplayer", roomCode, phase: "lobby" }); getSocket().connect(); },
 
   handleServerMessage: (msg) => {
     const applyState = (serialized: SerializedGameState, phaseOverride?: GamePhase): void => {
@@ -79,7 +79,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       case "move_rejected": set({ pendingEdge: null, error: friendlyReason(msg.reason) }); if (msg.reason === "invalid_sequence") get().requestState(); break;
       case "game_over": applyState(msg.state, "gameover"); set({ gameResults: msg.results }); break;
       case "chat_message": set((state) => ({ chatMessages: [...state.chatMessages.slice(-99), msg] })); break;
-      case "error": set({ error: msg.message, pendingEdge: null }); break;
+      case "error": if (["RECONNECT_FAILED", "JOIN_FAILED", "INVALID_ROOM_CODE"].includes(msg.code)) { storageRemove(ROOM_KEY); set({ error: msg.message, pendingEdge: null, roomCode: null, phase: get().playerName ? "menu" : "start", mode: "local" }); } else set({ error: msg.message, pendingEdge: null }); break;
       case "pong": set({ serverOffset: msg.serverNow - Date.now() }); break;
       case "turn_changed": set((state) => state.state ? { state: { ...state.state, turnDeadline: msg.turnDeadline, currentPlayerIndex: Math.max(0, state.state.players.findIndex((player) => player.id === msg.playerId)) }, serverOffset: msg.serverNow - Date.now() } : state); break;
       case "timer_started": set((state) => state.state ? { state: { ...state.state, turnDeadline: msg.turnDeadline, timerMode: state.state.timerMode }, serverOffset: msg.serverNow - Date.now() } : state); break;
