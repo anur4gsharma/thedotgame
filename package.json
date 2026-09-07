@@ -9,6 +9,6 @@
     "typecheck:shared": "pnpm --filter @dots-game/shared typecheck",
     "build": "pnpm --filter @dots-game/shared build && pnpm --filter @dots-game/server build && pnpm --filter @dots-game/client build",
     "build:shared": "pnpm --filter @dots-game/shared build",
-    "lint": "pnpm --filter @dots-game/shared lint && pnpm --filter @dots-game/server typecheck && pnpm --filter @dots-game/client typecheck"
+    "lint": "pnpm --filter @dots-game/shared build && pnpm --filter @dots-game/shared lint && pnpm --filter @dots-game/server typecheck && pnpm --filter @dots-game/client typecheck"
   }
 }
