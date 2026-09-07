@@ -4,7 +4,7 @@ services:
     env: node
     plan: free
     rootDir: .
-    buildCommand: npm install -g pnpm && pnpm install --prod=false && pnpm build:server
+    buildCommand: pnpm install --prod=false && pnpm build:server
     startCommand: node packages/server/dist/index.js
     envVars:
       - key: NODE_ENV
