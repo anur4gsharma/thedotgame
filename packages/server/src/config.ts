@@ -4,12 +4,12 @@ export const config = {
 
   // Room settings
   roomCodeLength: 6,
-  roomExpiryMs: 10 * 60 * 1000, // 10 minutes of inactivity
+  roomExpiryMs: 60 * 60 * 1000,
   maxRooms: 1000,
 
   // Player settings
   maxPlayersPerRoom: 4,
-  playerTimeoutMs: 2 * 60 * 1000, // 2 minutes before seat is released
+  playerTimeoutMs: 15 * 60 * 1000,
 
   // Rate limiting
   maxMovesPerSecond: 10,

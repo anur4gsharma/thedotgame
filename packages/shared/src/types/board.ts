@@ -2,6 +2,42 @@
 
 export type CellType = "square" | "triangle";
 
+export type BoardPreset =
+  | "classic" | "minimal" | "neon" | "blueprint" | "paper"
+  | "monochrome" | "arcade" | "soft" | "midnight";
+
+export interface BoardVisualConfig {
+  preset: BoardPreset;
+  dotSpacing: number;
+  dotSize: number;
+  lineThickness: number;
+  padding: number;
+  playerColors: [string, string, string, string];
+  backgroundColor: string;
+  dotColor: string;
+  lineColor: string;
+  completedCellColors: [string, string, string, string];
+  hoverColor: string;
+  turnColor: string;
+}
+
+export interface BoardConfig {
+  width: number;
+  height: number;
+  visual: BoardVisualConfig;
+}
+
+export const TIMER_MODES = [0, 15, 30, 45, 60, 90, 120] as const;
+export type TimerMode = (typeof TIMER_MODES)[number];
+
+export const DEFAULT_BOARD_VISUAL: BoardVisualConfig = {
+  preset: "classic", dotSpacing: 1, dotSize: 1, lineThickness: 1, padding: 0.16,
+  playerColors: ["#2957A4", "#D94B3D", "#2E8B57", "#D97706"],
+  backgroundColor: "#F3F0E8", dotColor: "#161616", lineColor: "#D6D1C5",
+  completedCellColors: ["#D7E2F7", "#F6D9D5", "#D9EBDD", "#F8E7C7"],
+  hoverColor: "#161616", turnColor: "#161616",
+};
+
 // ─── Board Symmetry ─────────────────────────────────────
 
 export type BoardSymmetry =
@@ -73,4 +109,5 @@ export interface BoardDefinition {
   edges: EdgeDef[];
   cells: CellDef[];
   metadata: BoardMetadata;
+  config?: BoardConfig;
 }

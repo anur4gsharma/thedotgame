@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useGameStore } from "./store/game-store";
 import { MainMenu } from "./components/menu/MainMenu";
 import { StartMenu } from "./components/menu/StartMenu";
@@ -9,6 +10,7 @@ import { Toast } from "./components/ui/Toast";
 import styles from "./App.module.css";
 
 export function App() {
+  useEffect(() => { useGameStore.getState().restoreSession(); }, []);
   const phase = useGameStore((s) => s.phase);
   const board = useGameStore((s) => s.board);
   const error = useGameStore((s) => s.error);

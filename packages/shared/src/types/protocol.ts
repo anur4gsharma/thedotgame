@@ -1,180 +1,92 @@
-import type { SerializedGameState, GameResult } from "./game.js";
+import type { BoardConfig, TimerMode } from "./board.js";
+import type { SerializedGameState, GameResult, PlayerColor } from "./game.js";
 
-// ─── Client → Server Messages ───────────────────────────
+export const PROTOCOL_VERSION = 1 as const;
 
-export type ClientMessage =
-  | CreateGameMessage
-  | JoinGameMessage
-  | MakeMoveMessage
-  | ReconnectMessage
-  | LeaveGameMessage
-  | StartGameMessage
-  | PingMessage
-  | ChatMessageClient;
-
-export interface CreateGameMessage {
-  type: "create_game";
-  boardId: string;
-  boardSize?: number;
-  maxPlayers: number;
-  playerName: string;
-}
-
-export interface JoinGameMessage {
-  type: "join_game";
-  roomCode: string;
-  playerName: string;
-}
-
-export interface MakeMoveMessage {
-  type: "make_move";
-  edgeId: string;
-  sequenceNumber: number;
-}
-
-export interface ReconnectMessage {
-  type: "reconnect";
-  playerId: string;
-  roomCode: string;
-}
-
-export interface LeaveGameMessage {
-  type: "leave_game";
-}
-
-export interface StartGameMessage {
-  type: "start_game";
-}
-
-export interface PingMessage {
-  type: "ping";
-  timestamp: number;
-}
-
-export interface ChatMessageClient {
-  type: "chat_message";
-  message: string;
-}
-
-// ─── Server → Client Messages ───────────────────────────
-
-export type ServerMessage =
-  | GameCreatedMessage
-  | PlayerJoinedMessage
-  | GameStartedMessage
-  | MoveMadeMessage
-  | MoveRejectedMessage
-  | StateSyncMessage
-  | PlayerLeftMessage
-  | PlayerReconnectedMessage
-  | GameOverMessage
-  | LobbyStateMessage
-  | ErrorMessage
-  | PongMessage
-  | ChatMessageServer
-  | GameJoinedMessage;
-
-export interface GameJoinedMessage {
-  type: "game_joined";
-  roomCode: string;
-  playerId: string;
-  state: LobbyState;
-}
-
-export interface ChatMessageServer {
-  type: "chat_message";
-  playerId: string;
-  playerName: string;
-  message: string;
-  timestamp: number;
-}
-
-export interface GameCreatedMessage {
-  type: "game_created";
-  roomCode: string;
-  playerId: string;
-  state: LobbyState;
-}
-
-export interface PlayerJoinedMessage {
-  type: "player_joined";
-  player: LobbyPlayer;
-  state: LobbyState;
-}
-
-export interface GameStartedMessage {
-  type: "game_started";
-  state: SerializedGameState;
-}
-
-export interface MoveMadeMessage {
-  type: "move_made";
-  playerId: string;
-  edgeId: string;
-  completedCells: string[];
-  scores: Record<string, number>;
-  nextPlayer: string;
-  sequenceNumber: number;
-}
-
-export interface MoveRejectedMessage {
-  type: "move_rejected";
-  reason: string;
-  sequenceNumber: number;
-}
-
-export interface StateSyncMessage {
-  type: "state_sync";
-  state: SerializedGameState;
-  sequenceNumber: number;
-}
-
-export interface PlayerLeftMessage {
-  type: "player_left";
-  playerId: string;
-}
-
-export interface PlayerReconnectedMessage {
-  type: "player_reconnected";
-  playerId: string;
-}
-
-export interface GameOverMessage {
-  type: "game_over";
-  results: GameResult[];
-}
-
-export interface LobbyStateMessage {
-  type: "lobby_state";
-  state: LobbyState;
-}
-
-export interface ErrorMessage {
-  type: "error";
-  code: string;
-  message: string;
-}
-
-export interface PongMessage {
-  type: "pong";
-  timestamp: number;
-}
-
-// ─── Lobby Types ────────────────────────────────────────
-
-export interface LobbyState {
-  boardId: string;
-  roomCode: string;
-  hostId: string;
-  maxPlayers: number;
-  players: LobbyPlayer[];
-  status: "lobby" | "playing" | "completed";
+export interface RoomSettings {
+  board: BoardConfig;
+  maxPlayers: 2 | 3 | 4;
+  timerMode: TimerMode;
 }
 
 export interface LobbyPlayer {
   id: string;
   name: string;
-  color: string;
+  color: PlayerColor;
   rating: number;
   connected: boolean;
+  ready: boolean;
+}
+
+export interface LobbyState {
+  roomCode: string;
+  hostId: string;
+  settings: RoomSettings;
+  players: LobbyPlayer[];
+  status: "lobby" | "playing" | "completed";
+  version: number;
+}
+
+export interface ChatMessageServer {
+  type: "chat_message";
+  version: typeof PROTOCOL_VERSION;
+  playerId: string;
+  playerName: string;
+  message: string;
+  timestamp: number;
+  messageId: string;
+}
+
+interface Envelope { version: typeof PROTOCOL_VERSION; }
+
+export type ClientMessage =
+  | ({ type: "create_room"; sessionId: string; playerName: string; settings: RoomSettings } & Envelope)
+  | ({ type: "join_room"; sessionId: string; roomCode: string; playerName: string } & Envelope)
+  | ({ type: "reconnect"; sessionId: string; roomCode: string } & Envelope)
+  | ({ type: "leave_room" } & Envelope)
+  | ({ type: "ready"; ready: boolean } & Envelope)
+  | ({ type: "start_game" } & Envelope)
+  | ({ type: "make_move"; edgeId: string; sequenceNumber: number; requestId: string } & Envelope)
+  | ({ type: "request_state"; lastSequenceNumber?: number } & Envelope)
+  | ({ type: "send_chat"; message: string; requestId: string } & Envelope)
+  | ({ type: "rematch" } & Envelope)
+  | ({ type: "ping"; timestamp: number } & Envelope);
+
+export type ServerMessage =
+  | ({ type: "room_created"; roomCode: string; playerId: string; state: LobbyState } & Envelope)
+  | ({ type: "room_joined"; roomCode: string; playerId: string; state: LobbyState } & Envelope)
+  | ({ type: "room_state"; state: LobbyState } & Envelope)
+  | ({ type: "player_joined"; player: LobbyPlayer; state: LobbyState } & Envelope)
+  | ({ type: "player_left"; playerId: string; state: LobbyState | null } & Envelope)
+  | ({ type: "player_reconnected"; playerId: string; state: LobbyState } & Envelope)
+  | ({ type: "player_disconnected"; playerId: string; state: LobbyState } & Envelope)
+  | ({ type: "game_started"; state: SerializedGameState } & Envelope)
+  | ({ type: "move_accepted"; playerId: string; edgeId: string; state: SerializedGameState; requestId: string } & Envelope)
+  | ({ type: "move_rejected"; reason: string; sequenceNumber: number; requestId: string } & Envelope)
+  | ({ type: "state_snapshot"; state: SerializedGameState } & Envelope)
+  | ({ type: "turn_changed"; playerId: string; turnDeadline: number | null; serverNow: number; sequenceNumber: number } & Envelope)
+  | ({ type: "timer_started"; playerId: string; turnDeadline: number; serverNow: number; sequenceNumber: number } & Envelope)
+  | ({ type: "timer_expired"; playerId: string; state: SerializedGameState } & Envelope)
+  | ({ type: "chat_message"; playerId: string; playerName: string; message: string; timestamp: number; messageId: string } & Envelope)
+  | ({ type: "game_over"; results: GameResult[]; state: SerializedGameState } & Envelope)
+  | ({ type: "rematch_started"; state: SerializedGameState } & Envelope)
+  | ({ type: "error"; code: string; message: string; retryable?: boolean } & Envelope)
+  | ({ type: "pong"; timestamp: number; serverNow: number } & Envelope);
+
+export function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+export function parseClientMessage(value: unknown): ClientMessage | null {
+  if (!isRecord(value) || value.version !== PROTOCOL_VERSION || typeof value.type !== "string") return null;
+  const type = value.type;
+  if (type === "ping" && typeof value.timestamp === "number") return value as unknown as ClientMessage;
+  if (type === "create_room" && typeof value.sessionId === "string" && typeof value.playerName === "string" && isRecord(value.settings)) return value as unknown as ClientMessage;
+  if (type === "join_room" && typeof value.sessionId === "string" && typeof value.roomCode === "string" && typeof value.playerName === "string") return value as unknown as ClientMessage;
+  if (type === "reconnect" && typeof value.sessionId === "string" && typeof value.roomCode === "string") return value as unknown as ClientMessage;
+  if (["leave_room", "start_game", "request_state", "rematch"].includes(type)) return value as unknown as ClientMessage;
+  if (type === "ready" && typeof value.ready === "boolean") return value as unknown as ClientMessage;
+  if (type === "make_move" && typeof value.edgeId === "string" && Number.isInteger(value.sequenceNumber) && typeof value.requestId === "string") return value as unknown as ClientMessage;
+  if (type === "send_chat" && typeof value.message === "string" && typeof value.requestId === "string") return value as unknown as ClientMessage;
+  return null;
 }

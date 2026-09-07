@@ -1,27 +1,16 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useGameStore } from "../../store/game-store";
-import type { BoardDefinition, PlayerColor } from "@dots-game/shared";
+import { DEFAULT_BOARD_VISUAL, type BoardDefinition, type PlayerColor } from "@dots-game/shared";
 import styles from "./board.module.css";
 
-const PLAYER_COLORS: Record<PlayerColor, string> = {
-  blue: "var(--player-blue)",
-  red: "var(--player-red)",
-  green: "var(--player-green)",
-  orange: "var(--player-orange)",
-};
-
-const PLAYER_COLORS_DIM: Record<PlayerColor, string> = {
-  blue: "var(--player-blue-dim)",
-  red: "var(--player-red-dim)",
-  green: "var(--player-green-dim)",
-  orange: "var(--player-orange-dim)",
-};
+const PLAYER_INDEX: Record<PlayerColor, number> = { blue: 0, red: 1, green: 2, orange: 3 };
 
 interface BoardRendererProps {
   board: BoardDefinition;
 }
 
 export function BoardRenderer({ board }: BoardRendererProps) {
+  const visual = board.config?.visual ?? DEFAULT_BOARD_VISUAL;
   const state = useGameStore((s) => s.state);
   const pendingEdge = useGameStore((s) => s.pendingEdge);
   const makeLocalMove = useGameStore((s) => s.makeLocalMove);
@@ -202,7 +191,7 @@ export function BoardRenderer({ board }: BoardRendererProps) {
   );
 
   const currentPlayer = state?.players[state?.currentPlayerIndex];
-  const currentColor = currentPlayer ? PLAYER_COLORS[currentPlayer.color] : "var(--accent)";
+  const currentColor = currentPlayer ? visual.playerColors[PLAYER_INDEX[currentPlayer.color]] : visual.turnColor;
   const lastMoveId = state?.moveHistory[state.moveHistory.length - 1]?.edgeId;
 
   if (!state) return null;
@@ -226,7 +215,7 @@ export function BoardRenderer({ board }: BoardRendererProps) {
         </pattern>
       </defs>
 
-      <rect x="-10" y="-10" width="20" height="20" fill="url(#graph-paper)" pointerEvents="none" />
+      <rect x="-10" y="-10" width="20" height="20" fill={visual.backgroundColor} pointerEvents="none" />
 
       {/* Completed cells */}
       {board.cells.map((cell) => {
@@ -244,7 +233,7 @@ export function BoardRenderer({ board }: BoardRendererProps) {
           <polygon
             key={cell.id}
             points={points}
-            fill={PLAYER_COLORS_DIM[player.color]}
+            fill={visual.completedCellColors[PLAYER_INDEX[player.color]]}
             className={styles.cellFill}
             pointerEvents="none"
           />
@@ -275,7 +264,7 @@ export function BoardRenderer({ board }: BoardRendererProps) {
           let edgeClass = styles.edge;
           
           if (isClaimed && owner) {
-            strokeColor = PLAYER_COLORS[owner.color];
+            strokeColor = visual.playerColors[PLAYER_INDEX[owner.color]];
             if (isLastMove) {
               strokeWidth = 0.024; // Thicker for last move
             }
@@ -292,7 +281,7 @@ export function BoardRenderer({ board }: BoardRendererProps) {
               x1={vA.x} y1={vA.y}
               x2={vB.x} y2={vB.y}
               stroke={strokeColor}
-              strokeWidth={strokeWidth}
+            strokeWidth={strokeWidth * visual.lineThickness}
               opacity={opacity}
               strokeLinecap="round"
               className={edgeClass}
@@ -328,7 +317,7 @@ export function BoardRenderer({ board }: BoardRendererProps) {
             cx={vertex.x}
             cy={vertex.y}
             r={isDragSource ? dotRadius * 1.5 : dotRadius}
-            fill={isDragSource ? currentColor : "var(--vertex-default)"}
+            fill={isDragSource ? currentColor : visual.dotColor}
             className={styles.vertex}
             onPointerDown={(e) => handlePointerDown(vertex.id, e)}
             style={{ cursor: "pointer" }}

@@ -10,6 +10,7 @@ import type {
   SerializedGameState,
 } from "../types/index.js";
 import { PLAYER_COLORS } from "../types/index.js";
+import type { TimerMode } from "../types/board.js";
 
 // ─── Board Runtime ──────────────────────────────────────
 
@@ -50,6 +51,7 @@ export class GameEngine {
    * Create a new game state from a board definition and list of players.
    */
   static createGame(board: BoardDefinition, players: Player[]): GameState {
+    if (players.length < 2 || players.length > 4) throw new Error("A game requires 2 to 4 players");
     // Initialize all edges as unclaimed
     const edges = new Map<string, EdgeState>();
     for (const edge of board.edges) {
@@ -78,6 +80,9 @@ export class GameEngine {
       scores,
       moveHistory: [],
       sequenceNumber: 0,
+      turnDeadline: null,
+      timerMode: 0,
+      timeoutCount: 0,
     };
   }
 
@@ -107,7 +112,7 @@ export class GameEngine {
 
     // Must be the player's turn
     const currentPlayer = state.players[state.currentPlayerIndex];
-    if (currentPlayer.id !== playerId) {
+    if (!currentPlayer || currentPlayer.id !== playerId) {
       return { valid: false, reason: "not_your_turn" };
     }
 
@@ -137,6 +142,23 @@ export class GameEngine {
     }
 
     return { valid: true };
+  }
+
+  static startTimer(state: GameState, timerMode: TimerMode, now = Date.now()): GameState {
+    return { ...state, timerMode, turnDeadline: timerMode === 0 ? null : now + timerMode * 1000 };
+  }
+
+  static expireTurn(state: GameState, now = Date.now()): GameState {
+    if (state.status !== "playing" || state.turnDeadline === null || now < state.turnDeadline) return state;
+    const nextPlayerIndex = (state.currentPlayerIndex + 1) % state.players.length;
+    const nextDeadline = state.timerMode === 0 ? null : now + state.timerMode * 1000;
+    return {
+      ...state,
+      currentPlayerIndex: nextPlayerIndex,
+      turnDeadline: nextDeadline,
+      timeoutCount: state.timeoutCount + 1,
+      sequenceNumber: state.sequenceNumber + 1,
+    };
   }
 
   /**
@@ -220,6 +242,7 @@ export class GameEngine {
       scores: newScores,
       moveHistory: newMoveHistory,
       sequenceNumber: state.sequenceNumber + 1,
+      turnDeadline: state.timerMode === 0 ? null : now + state.timerMode * 1000,
     };
   }
 
@@ -275,6 +298,10 @@ export class GameEngine {
       scores,
       moveHistory: state.moveHistory,
       sequenceNumber: state.sequenceNumber,
+      turnDeadline: state.turnDeadline,
+      serverNow: Date.now(),
+      timerMode: state.timerMode,
+      timeoutCount: state.timeoutCount,
     };
   }
 
@@ -307,6 +334,9 @@ export class GameEngine {
       scores,
       moveHistory: data.moveHistory,
       sequenceNumber: data.sequenceNumber,
+      turnDeadline: data.turnDeadline ?? null,
+      timerMode: data.timerMode ?? 0,
+      timeoutCount: data.timeoutCount ?? 0,
     };
   }
 

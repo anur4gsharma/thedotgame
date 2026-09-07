@@ -1,4 +1,5 @@
-import type { BoardDefinition, VertexDef, EdgeDef, CellDef } from "../types/index.js";
+import type { BoardDefinition, VertexDef, EdgeDef, CellDef, BoardVisualConfig } from "../types/index.js";
+import { DEFAULT_BOARD_VISUAL } from "../types/index.js";
 
 /**
  * Generate a square grid board.
@@ -16,6 +17,7 @@ export function generateSquareBoard(
   rows: number,
   id?: string,
   name?: string,
+  visual?: BoardVisualConfig,
 ): BoardDefinition {
   const width = cols + 1;
   const height = rows + 1;
@@ -94,6 +96,11 @@ export function generateSquareBoard(
       description: `A ${cols}×${rows} square grid with ${cols * rows} cells`,
       recommendedPlayerCount: { min: 2, max: 4 },
       difficulty: "easy",
+    },
+    config: {
+      width: cols,
+      height: rows,
+      visual: { ...DEFAULT_BOARD_VISUAL, ...visual },
     },
   };
 }

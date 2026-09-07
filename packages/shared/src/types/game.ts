@@ -58,6 +58,9 @@ export interface GameState {
   scores: Map<string, number>;
   moveHistory: MoveRecord[];
   sequenceNumber: number;
+  turnDeadline: number | null;
+  timerMode: import("./board.js").TimerMode;
+  timeoutCount: number;
 }
 
 // ─── Serialized State ───────────────────────────────────
@@ -76,6 +79,10 @@ export interface SerializedGameState {
   scores: Record<string, number>;
   moveHistory: MoveRecord[];
   sequenceNumber: number;
+  turnDeadline: number | null;
+  serverNow: number;
+  timerMode: import("./board.js").TimerMode;
+  timeoutCount: number;
 }
 
 // ─── Game Result ────────────────────────────────────────

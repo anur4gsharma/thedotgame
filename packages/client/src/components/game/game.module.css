@@ -91,6 +91,34 @@
 
 .turnTimer {
   font-variant-numeric: tabular-nums;
+  min-width: 92px;
+  display: grid;
+  gap: 5px;
+  text-align: right;
+}
+
+.timerTrack {
+  height: 4px;
+  width: 92px;
+  background: rgba(255, 255, 255, 0.25);
+  overflow: hidden;
+}
+
+.timerBar {
+  display: block;
+  height: 100%;
+  background: currentColor;
+  transition: width 100ms linear;
+}
+
+.timerCritical {
+  color: #ffd1cc;
+  animation: timerPulse 700ms ease-in-out infinite alternate;
+}
+
+@keyframes timerPulse {
+  from { opacity: 0.72; }
+  to { opacity: 1; }
 }
 
 .chatPanel {

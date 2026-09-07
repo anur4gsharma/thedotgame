@@ -7,6 +7,7 @@ export function GameOverModal() {
   const state = useGameStore((s) => s.state);
   const gameResults = useGameStore((s) => s.gameResults);
   const resetGame = useGameStore((s) => s.resetGame);
+  const rematch = useGameStore((s) => s.rematch);
   const mode = useGameStore((s) => s.mode);
 
   let results: GameResult[];
@@ -38,9 +39,8 @@ export function GameOverModal() {
         ))}
       </div>
 
-      <button className={styles.playAgainBtn} onClick={resetGame}>
-        {mode === "multiplayer" ? "Exit Match" : "Play Again"}
-      </button>
+      <button className={styles.playAgainBtn} onClick={mode === "multiplayer" ? rematch : resetGame}>{mode === "multiplayer" ? "Request rematch" : "Play Again"}</button>
+      {mode === "multiplayer" && <button className={styles.playAgainBtn} onClick={resetGame}>Leave match</button>}
     </div>
   );
 }
