@@ -1,0 +1,5 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "cd ../.. && pnpm --filter @dots-game/shared build && pnpm --filter @dots-game/client build",
+  "outputDirectory": "dist"
+}
