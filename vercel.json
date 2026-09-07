@@ -1,6 +1,7 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "pnpm install --frozen-lockfile",
   "buildCommand": "pnpm --filter @dots-game/client build",
   "outputDirectory": "packages/client/dist",
-  "framework": "vite"
+  "framework": null
 }

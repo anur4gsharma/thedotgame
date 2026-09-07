@@ -15,9 +15,15 @@ jobs:
           version: 9.15.5
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+      - name: Verify build artifacts
+        run: |
+          test -f packages/client/dist/index.html || (echo "Client dist/index.html missing" && exit 1)
+          test -f packages/server/dist/index.js || (echo "Server dist/index.js missing" && exit 1)
+          test -f packages/shared/dist/index.js || (echo "Shared dist/index.js missing" && exit 1)

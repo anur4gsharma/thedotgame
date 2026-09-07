@@ -3,12 +3,12 @@
   "private": true,
   "packageManager": "pnpm@9.15.5",
   "scripts": {
-    "test": "pnpm --filter @dots-game/shared test && pnpm --filter @dots-game/shared build && pnpm --filter @dots-game/server test",
+    "test": "pnpm --filter @dots-game/shared test && pnpm --filter @dots-game/shared build && pnpm --filter @dots-game/server test && pnpm --filter @dots-game/client test",
     "test:shared": "pnpm --filter @dots-game/shared test",
     "typecheck": "pnpm --filter @dots-game/shared typecheck && pnpm --filter @dots-game/shared build && pnpm --filter @dots-game/server typecheck && pnpm --filter @dots-game/client typecheck",
     "typecheck:shared": "pnpm --filter @dots-game/shared typecheck",
     "build": "pnpm --filter @dots-game/shared build && pnpm --filter @dots-game/server build && pnpm --filter @dots-game/client build",
     "build:shared": "pnpm --filter @dots-game/shared build",
-    "lint": "pnpm -r lint"
+    "lint": "pnpm --filter @dots-game/shared lint && pnpm --filter @dots-game/server typecheck && pnpm --filter @dots-game/client typecheck"
   }
 }

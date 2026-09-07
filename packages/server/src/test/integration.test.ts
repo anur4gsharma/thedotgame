@@ -139,4 +139,79 @@ describe("Integration Flow", () => {
     hostWs.close();
     reconnectWs.close();
   });
+
+  it("should create room and play on non-square topologies (triangle)", async () => {
+    const hostWs = await connectClient();
+    hostWs.send(JSON.stringify({
+      version: 1,
+      type: "create_room",
+      sessionId: "host-triangle",
+      playerName: "TriangleHost",
+      settings: {
+        board: { shape: "triangle", width: 3, height: 3, visual: {} },
+        maxPlayers: 2,
+        timerMode: 30,
+      },
+    }));
+
+    const createRes = await nextMessage(hostWs);
+    expect(createRes.type).toBe("room_created");
+    expect(createRes.state.settings.board.shape).toBe("triangle");
+    const roomCode = createRes.roomCode;
+
+    const guestWs = await connectClient();
+    guestWs.send(JSON.stringify({
+      version: 1,
+      type: "join_room",
+      sessionId: "guest-triangle",
+      playerName: "TriangleGuest",
+      roomCode,
+    }));
+
+    const guestJoinRes = await nextMessage(guestWs);
+    expect(guestJoinRes.type).toBe("room_joined");
+    expect(guestJoinRes.state.settings.board.shape).toBe("triangle");
+
+    // Clear host notification for guest join
+    await nextMessage(hostWs);
+
+    // Both players ready up
+    hostWs.send(JSON.stringify({ version: 1, type: "ready", ready: true }));
+    guestWs.send(JSON.stringify({ version: 1, type: "ready", ready: true }));
+
+    // Drain ready state broadcasts
+    await nextMessage(hostWs);
+    await nextMessage(hostWs);
+    await nextMessage(guestWs);
+    await nextMessage(guestWs);
+
+    // Host starts game
+    hostWs.send(JSON.stringify({ version: 1, type: "start_game" }));
+
+    const hostStart = await nextMessage(hostWs);
+    expect(hostStart.type).toBe("game_started");
+    expect(hostStart.state.status).toBe("playing");
+
+    // Make valid move on triangle board
+    const firstEdge = Object.keys(hostStart.state.edges)[0];
+    hostWs.send(JSON.stringify({
+      version: 1,
+      type: "make_move",
+      edgeId: firstEdge,
+      sequenceNumber: 0,
+      requestId: "move-1",
+    }));
+
+    // Host gets timer_started, then move_accepted
+    let hostMsg = await nextMessage(hostWs);
+    while (hostMsg.type !== "move_accepted") {
+      hostMsg = await nextMessage(hostWs);
+    }
+    expect(hostMsg.type).toBe("move_accepted");
+    expect(hostMsg.edgeId).toBe(firstEdge);
+    expect(hostMsg.state.edges[firstEdge].owner).toBe("host-triangle");
+
+    hostWs.close();
+    guestWs.close();
+  });
 });
