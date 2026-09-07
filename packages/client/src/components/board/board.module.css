@@ -64,13 +64,10 @@
 
 .edgeDrawn {
   animation: edgeDraw var(--duration-normal) var(--ease-out) forwards;
+  transform-origin: center;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .board, .cellFill, .edgePending, .edgeDrawn {
-    animation: none !important;
-  }
-  .edge, .vertex {
-    transition: none !important;
-  }
+  .board, .cellFill, .edgePending, .edgeDrawn { animation-duration: 120ms !important; animation-iteration-count: 1 !important; }
+  .edge, .vertex { transition-duration: 80ms !important; }
 }

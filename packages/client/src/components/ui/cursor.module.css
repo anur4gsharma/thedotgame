@@ -1,6 +1,7 @@
-.ring,.dot{position:fixed;left:0;top:0;pointer-events:none;z-index:9999;transform:translate3d(-100px,-100px);will-change:transform;border-radius:50%;}
+.ring,.dot{position:fixed;left:0;top:0;pointer-events:none;z-index:9999;transform:translate3d(-100px,-100px);will-change:transform;border-radius:50%;color:var(--text);}
 .ring{width:26px;height:26px;margin:-13px;border:1px solid currentColor;opacity:.45;transition:width 120ms ease,height 120ms ease,margin 120ms ease,opacity 120ms ease,border-color 120ms ease;}
 .dot{width:5px;height:5px;margin:-2.5px;background:currentColor;transition:transform 120ms ease,background 120ms ease;}
-.hover.ring{width:36px;height:36px;margin:-18px;opacity:.8}.click.ring{width:20px;height:20px;margin:-10px;opacity:.9}.click.dot{transform:scale(.7)}.board.ring{width:30px;height:30px;margin:-15px;border-color:var(--accent)}.grab.ring{border-style:dashed}.grabbing.ring{width:20px;height:20px;margin:-10px;border-style:dashed}.invalid.ring{border-color:var(--player-red);animation:reject 180ms ease-in-out 2}
+.hover.ring{width:36px;height:36px;margin:-18px;opacity:.8}.click.ring{width:20px;height:20px;margin:-10px;opacity:.9}.click.dot{scale:.7}.board.ring{width:30px;height:30px;margin:-15px;border-color:var(--accent)}.grab.ring{border-style:dashed}.grabbing.ring{width:20px;height:20px;margin:-10px;border-style:dashed}.invalid.ring{border-color:var(--player-red);animation:reject 180ms ease-in-out 2}
 @keyframes reject{25%{margin-left:-16px}75%{margin-left:-10px}}
-@media (pointer:coarse),(prefers-reduced-motion:reduce){.ring,.dot{display:none}}
+@media (pointer:coarse){.ring,.dot{display:none}}
+@media (prefers-reduced-motion:reduce){.ring,.dot{transition-duration:80ms}.invalid.ring{animation:none}}

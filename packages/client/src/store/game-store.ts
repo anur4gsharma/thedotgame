@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { GameEngine, buildBoardRuntime, generateSquareBoard, DEFAULT_BOARD_VISUAL, PROTOCOL_VERSION, type BoardConfig, type BoardDefinition, type BoardRuntime, type ClientMessage, type GameResult, type GameState, type LobbyState, type ServerMessage, type RoomSettings, type SerializedGameState, type TimerMode, type ChatMessageServer } from "@dots-game/shared";
+import { GameEngine, buildBoardRuntime, generateBoardFromConfig, DEFAULT_BOARD_VISUAL, PROTOCOL_VERSION, type BoardConfig, type BoardDefinition, type BoardRuntime, type ClientMessage, type GameResult, type GameState, type LobbyState, type ServerMessage, type RoomSettings, type SerializedGameState, type TimerMode, type ChatMessageServer } from "@dots-game/shared";
 import { getSocket } from "../lib/websocket";
 import { sound } from "../lib/sound";
 import { haptics } from "../lib/haptics";
@@ -19,7 +19,7 @@ const message = <T extends ClientMessage["type"]>(type: T, fields: Omit<Extract<
 
 function boardFromConfig(config: BoardConfig): BoardDefinition {
   const safe: BoardConfig = { ...config, visual: { ...DEFAULT_BOARD_VISUAL, ...config.visual } };
-  return generateSquareBoard(safe.width, safe.height, `custom-${safe.width}x${safe.height}`, `${safe.width}×${safe.height} Board`, safe.visual);
+  return generateBoardFromConfig(safe, `custom-${safe.shape ?? "square"}-${safe.width}x${safe.height}`);
 }
 
 function friendlyReason(reason: string): string { const labels: Record<string, string> = { not_your_turn: "It is not your turn.", edge_already_claimed: "That line has already been claimed.", invalid_sequence: "The board changed. Resyncing…", game_already_over: "The game is already over.", game_not_started: "The game has not started yet.", edge_not_found: "That line is not on this board.", player_not_in_game: "You are no longer in this match." }; return labels[reason] ?? reason; }
@@ -65,7 +65,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   handleServerMessage: (msg) => {
     const applyState = (serialized: SerializedGameState, phaseOverride?: GamePhase): void => {
       const current = get().state; if (current && serialized.sequenceNumber < current.sequenceNumber) return;
-      const state = GameEngine.deserialize(serialized); const lobby = get().lobbyState; const board = lobby ? serializeReadyBoard(lobby) : get().board ?? boardFromConfig({ width: 5, height: 5, visual: DEFAULT_BOARD_VISUAL });
+      const state = GameEngine.deserialize(serialized); const lobby = get().lobbyState; const board = lobby ? serializeReadyBoard(lobby) : get().board ?? boardFromConfig({ shape: "square", width: 5, height: 5, visual: DEFAULT_BOARD_VISUAL });
       const offset = serialized.serverNow - Date.now(); set({ state, board, runtime: buildBoardRuntime(board), serverOffset: offset, localTimerDeadline: null, pendingEdge: null, phase: phaseOverride ?? (state.status === "completed" ? "gameover" : "playing") });
     };
     switch (msg.type) {

@@ -64,7 +64,7 @@ export function BoardRenderer({ board }: BoardRendererProps) {
     return map;
   }, [board]);
 
-  const dotRadius = 0.015;
+  const dotRadius = 0.015 * visual.dotSize;
   const hitRadius = 0.05;
 
   const commitMove = useCallback(
@@ -264,9 +264,9 @@ export function BoardRenderer({ board }: BoardRendererProps) {
             ? state.players.find((p) => p.id === edgeState.owner)
             : null;
 
-          let strokeColor = "transparent";
+          let strokeColor = visual.lineColor;
           let strokeWidth = 0.016;
-          let opacity = 1;
+          let opacity = isClaimed ? 1 : 0.7;
           let edgeClass = styles.edge;
           
           if (isClaimed && owner) {
@@ -276,23 +276,38 @@ export function BoardRenderer({ board }: BoardRendererProps) {
             }
             edgeClass = `${styles.edge} ${styles.edgeDrawn || ""}`;
           } else if (isPending || isHovered) {
-            strokeColor = currentColor;
+            strokeColor = isPending ? currentColor : visual.hoverColor;
             opacity = 0.3;
             edgeClass = `${styles.edge} ${isPending ? styles.edgePending : ""}`;
           }
 
           return (
-            <line
-              key={edge.id}
-              x1={vA.x} y1={vA.y}
-              x2={vB.x} y2={vB.y}
-              stroke={strokeColor}
-            strokeWidth={strokeWidth * visual.lineThickness}
-              opacity={opacity}
-              strokeLinecap="round"
-              className={edgeClass}
-              pointerEvents="none"
-            />
+            <g key={edge.id}>
+              {!isClaimed && (
+                <line
+                  x1={vA.x} y1={vA.y}
+                  x2={vB.x} y2={vB.y}
+                  stroke="transparent"
+                  strokeWidth={0.05}
+                  strokeLinecap="round"
+                  pointerEvents="stroke"
+                  data-cursor-lock="true"
+                  onPointerEnter={() => { setHoverEdge(edge.id); setCursorState("board"); }}
+                  onPointerLeave={() => { setHoverEdge((current) => current === edge.id ? null : current); setCursorState("default"); }}
+                  onPointerDown={(event) => { event.preventDefault(); commitMove(edge.id); }}
+                />
+              )}
+              <line
+                x1={vA.x} y1={vA.y}
+                x2={vB.x} y2={vB.y}
+                stroke={strokeColor}
+                strokeWidth={strokeWidth * visual.lineThickness}
+                opacity={opacity}
+                strokeLinecap="round"
+                className={edgeClass}
+                pointerEvents="none"
+              />
+            </g>
           );
         })}
 

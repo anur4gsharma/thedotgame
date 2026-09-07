@@ -1,6 +1,7 @@
 // ─── Cell Types ─────────────────────────────────────────
 
 export type CellType = "square" | "triangle";
+export type BoardShape = "square" | "triangle" | "hexagon" | "octagon";
 
 export type BoardPreset =
   | "classic" | "minimal" | "neon" | "blueprint" | "paper"
@@ -22,6 +23,7 @@ export interface BoardVisualConfig {
 }
 
 export interface BoardConfig {
+  shape?: BoardShape;
   width: number;
   height: number;
   visual: BoardVisualConfig;

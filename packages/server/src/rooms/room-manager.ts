@@ -42,6 +42,7 @@ function defaultSettings(board: BoardDefinition, maxPlayers: number): RoomSettin
   const height = board.config?.height ?? 5;
   return {
     board: board.config ?? {
+      shape: "square",
       width, height,
       visual: {
         preset: "classic", dotSpacing: 1, dotSize: 1, lineThickness: 1, padding: 0.16,
