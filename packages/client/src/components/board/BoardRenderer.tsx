@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { useGameStore } from "../../store/game-store";
 import { DEFAULT_BOARD_VISUAL, type BoardDefinition, type PlayerColor } from "@dots-game/shared";
 import styles from "./board.module.css";
+import { setCursorState } from "../ui/Cursor";
 
 const PLAYER_INDEX: Record<PlayerColor, number> = { blue: 0, red: 1, green: 2, orange: 3 };
 
@@ -31,7 +32,7 @@ export function BoardRenderer({ board }: BoardRendererProps) {
       minY = Math.min(minY, v.y);
       maxY = Math.max(maxY, v.y);
     }
-    const pad = 0.15;
+    const pad = board.config?.visual.padding ?? 0.15;
     return `${minX - pad} ${minY - pad} ${maxX - minX + pad * 2} ${maxY - minY + pad * 2}`;
   }, [board]);
 
@@ -128,6 +129,7 @@ export function BoardRenderer({ board }: BoardRendererProps) {
       e.preventDefault();
       (e.target as Element).setPointerCapture?.(e.pointerId);
       setDragVertex(vertexId);
+      setCursorState("grabbing");
       const pos = vertexPos.get(vertexId);
       if (pos) setPointerPos({ x: pos.x, y: pos.y });
     },
@@ -150,11 +152,13 @@ export function BoardRenderer({ board }: BoardRendererProps) {
             const edgeState = state?.edges.get(edgeId);
             if (!edgeState?.owner) {
                setHoverEdge(edgeId);
+               setCursorState("board");
                return;
             }
           }
         }
         setHoverEdge(null);
+        setCursorState("grab");
       }
     },
     [dragVertex, toSVGCoords, findClosestVertex, findEdge, state]
@@ -166,6 +170,7 @@ export function BoardRenderer({ board }: BoardRendererProps) {
         setDragVertex(null);
         setPointerPos(null);
         setHoverEdge(null);
+        setCursorState("default");
         return;
       }
 
@@ -186,6 +191,7 @@ export function BoardRenderer({ board }: BoardRendererProps) {
       setDragVertex(null);
       setPointerPos(null);
       setHoverEdge(null);
+      setCursorState("default");
     },
     [dragVertex, state, toSVGCoords, findClosestVertex, findEdge, commitMove],
   );
@@ -204,7 +210,7 @@ export function BoardRenderer({ board }: BoardRendererProps) {
       preserveAspectRatio="xMidYMid meet"
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
-      onPointerCancel={() => { setDragVertex(null); setPointerPos(null); setHoverEdge(null); }}
+      onPointerCancel={() => { setDragVertex(null); setPointerPos(null); setHoverEdge(null); setCursorState("default"); }}
       style={{ touchAction: "none" }}
       role="application"
     >

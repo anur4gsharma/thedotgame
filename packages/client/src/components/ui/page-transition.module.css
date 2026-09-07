@@ -1,0 +1,1 @@
+.page{height:100%;opacity:0;transform:translateY(8px) scale(.995);transition:opacity 220ms var(--ease-out),transform 320ms var(--ease-out)}.visible{opacity:1;transform:none}@media (prefers-reduced-motion:reduce){.page{transition:none;transform:none}}

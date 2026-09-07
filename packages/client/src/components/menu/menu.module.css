@@ -159,3 +159,5 @@
   font-size: 13px;
   margin-top: 8px;
 }
+
+.previewSwatch{height:54px;border:2px solid;display:flex;align-items:center;justify-content:space-evenly}.previewSwatch span{width:8px;height:8px;border-radius:50%;box-shadow:20px 0 0 currentColor,40px 0 0 currentColor}

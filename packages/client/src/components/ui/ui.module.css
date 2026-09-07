@@ -44,7 +44,7 @@
   bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--bg-panel);
+  background: var(--bg);
   color: var(--text);
   padding: 12px 24px;
   border-radius: var(--radius-md);
@@ -53,6 +53,8 @@
   z-index: 1000;
   transition: opacity 0.3s var(--ease-out), transform 0.3s var(--ease-out);
 }
+
+.toast{display:flex;align-items:center;gap:18px;max-width:min(90vw,520px);font-size:12px;line-height:1.45}.toastClose{font-size:20px;line-height:1;padding:0 2px;color:var(--text-secondary)}.toastClose:hover{color:var(--text)}
 
 .toastVisible {
   opacity: 1;

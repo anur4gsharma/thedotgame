@@ -7,6 +7,8 @@ import { GameHUD } from "./components/game/GameHUD";
 import { GameOverModal } from "./components/game/GameOverModal";
 import { Lobby } from "./components/lobby/Lobby";
 import { Toast } from "./components/ui/Toast";
+import { Cursor } from "./components/ui/Cursor";
+import { PageTransition } from "./components/ui/PageTransition";
 import styles from "./App.module.css";
 
 export function App() {
@@ -17,6 +19,8 @@ export function App() {
 
   return (
     <div className={styles.app}>
+      <Cursor />
+      <PageTransition pageKey={phase}>
       {phase === "start" && <StartMenu />}
 
       {phase === "menu" && <MainMenu />}
@@ -35,6 +39,7 @@ export function App() {
         </div>
       )}
 
+      </PageTransition>
       {error && <Toast message={error} onClose={() => useGameStore.setState({ error: null })} />}
     </div>
   );

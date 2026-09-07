@@ -180,6 +180,7 @@ export class RoomManager {
 
   requestRematch(roomCode: string, playerId: string): RoomResult {
     const room = this.rooms.get(roomCode); if (!room || room.status !== "completed" || !room.gameState) return { room: null, error: "Rematch is not available yet." };
+    if (room.players.size < 2) return { room: null, error: "Rematch is unavailable because the other player left the room." };
     if (!room.players.has(playerId)) return { room: null, error: "You are not in this room." };
     room.rematchVotes.add(playerId);
     const allConnected = Array.from(room.players.values()).filter((p) => p.connected).every((p) => room.rematchVotes.has(p.playerId));

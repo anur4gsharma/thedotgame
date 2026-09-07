@@ -21,8 +21,9 @@ export function Toast({ message, duration = 3000, onClose }: ToastProps) {
   if (!visible && !onClose) return null;
 
   return (
-    <div className={`${styles.toast} ${visible ? styles.toastVisible : styles.toastHidden}`} role="alert">
-      {message}
+    <div className={`${styles.toast} ${visible ? styles.toastVisible : styles.toastHidden}`} role="alert" aria-live="assertive">
+      <span>{message}</span>
+      {onClose && <button className={styles.toastClose} onClick={() => { setVisible(false); onClose(); }} aria-label="Dismiss message">×</button>}
     </div>
   );
 }

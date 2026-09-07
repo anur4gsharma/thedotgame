@@ -42,6 +42,7 @@
   --duration-fast: 80ms;
   --duration-normal: 150ms;
   --duration-slow: 250ms;
+  --duration-page: 320ms;
 
   /* Typography */
   --font-display: 'Fraunces', serif;
@@ -68,6 +69,10 @@ button {
   background: none;
   color: inherit;
 }
+
+.has-custom-cursor, .has-custom-cursor * { cursor: none !important; }
+input, select, textarea { user-select: text; -webkit-user-select: text; }
+input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
 button:focus-visible {
   outline: 2px solid var(--accent);

@@ -58,7 +58,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   startMultiplayerGame: () => getSocket().send(message("start_game", {})),
   makeMultiplayerMove: (edgeId) => { const state = get().state; if (!state || get().pendingEdge) return; set({ pendingEdge: edgeId }); getSocket().send(message("make_move", { edgeId, sequenceNumber: state.sequenceNumber, requestId: id() })); },
   requestState: () => getSocket().send(message("request_state", {})),
-  rematch: () => getSocket().send(message("rematch", {})),
+  rematch: () => { set({ error: "Rematch requested. Waiting for the other player…" }); getSocket().send(message("rematch", {})); },
   sendChatMessage: (msg) => { const clean = msg.trim(); if (clean) getSocket().send(message("send_chat", { message: clean.slice(0, 250), requestId: id() })); },
   restoreSession: () => { const roomCode = storageGet(ROOM_KEY); if (!roomCode || !get().playerName) return; set({ mode: "multiplayer", roomCode, phase: "lobby" }); getSocket().connect(); },
 

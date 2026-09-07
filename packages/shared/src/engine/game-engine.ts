@@ -83,6 +83,8 @@ export class GameEngine {
       turnDeadline: null,
       timerMode: 0,
       timeoutCount: 0,
+      startedAt: Date.now(),
+      completedAt: null,
     };
   }
 
@@ -243,6 +245,7 @@ export class GameEngine {
       moveHistory: newMoveHistory,
       sequenceNumber: state.sequenceNumber + 1,
       turnDeadline: state.timerMode === 0 ? null : now + state.timerMode * 1000,
+      completedAt: newStatus === "completed" ? now : null,
     };
   }
 
@@ -265,7 +268,7 @@ export class GameEngine {
       playerName: player.name,
       color: player.color,
       score: state.scores.get(player.id) || 0,
-      rank: index + 1,
+      rank: index === 0 || (state.scores.get(player.id) || 0) !== (state.scores.get(sorted[index - 1].id) || 0) ? index + 1 : index,
     }));
   }
 
@@ -302,6 +305,8 @@ export class GameEngine {
       serverNow: Date.now(),
       timerMode: state.timerMode,
       timeoutCount: state.timeoutCount,
+      startedAt: state.startedAt,
+      completedAt: state.completedAt,
     };
   }
 
@@ -337,6 +342,8 @@ export class GameEngine {
       turnDeadline: data.turnDeadline ?? null,
       timerMode: data.timerMode ?? 0,
       timeoutCount: data.timeoutCount ?? 0,
+      startedAt: data.startedAt ?? Date.now(),
+      completedAt: data.completedAt ?? null,
     };
   }
 

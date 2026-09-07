@@ -21,6 +21,7 @@ export function generateSquareBoard(
 ): BoardDefinition {
   const width = cols + 1;
   const height = rows + 1;
+  const visualConfig = { ...DEFAULT_BOARD_VISUAL, ...visual };
 
   // Generate vertices
   const vertices: VertexDef[] = [];
@@ -28,8 +29,8 @@ export function generateSquareBoard(
     for (let x = 0; x < width; x++) {
       vertices.push({
         id: `v-${x}-${y}`,
-        x: x / cols, // Normalized 0..1
-        y: y / rows,
+        x: (x / cols) * visualConfig.dotSpacing,
+        y: (y / rows) * visualConfig.dotSpacing,
       });
     }
   }
@@ -100,7 +101,7 @@ export function generateSquareBoard(
     config: {
       width: cols,
       height: rows,
-      visual: { ...DEFAULT_BOARD_VISUAL, ...visual },
+      visual: visualConfig,
     },
   };
 }

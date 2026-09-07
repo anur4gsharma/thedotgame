@@ -9,6 +9,7 @@ export function ChatPanel() {
   const myPlayerId = useGameStore((s) => s.playerId);
   const mode = useGameStore((s) => s.mode);
   const connected = useGameStore((s) => s.connected);
+  const setError = (message: string | null) => useGameStore.setState({ error: message });
   
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -23,10 +24,7 @@ export function ChatPanel() {
     if (!input.trim() || !connected) return;
     
     // Only send if within arbitrary max char limit (200 is server limit)
-    if (input.length > 200) {
-      alert("Message too long");
-      return;
-    }
+    if (input.length > 250) { setError("Chat messages are limited to 250 characters."); return; }
 
     sendChatMessage(input.trim());
     setInput("");
@@ -39,7 +37,7 @@ export function ChatPanel() {
 
   return (
     <div className={styles.chatPanel}>
-      <div className={styles.chatMessages}>
+      <div className={styles.chatMessages} role="log" aria-live="polite" aria-label="Match chat">
         {chatMessages.length === 0 && (
           <div style={{ opacity: 0.5, fontSize: "0.85rem", textAlign: "center", marginTop: "1rem" }}>
             No messages yet.
@@ -75,7 +73,8 @@ export function ChatPanel() {
         <div ref={bottomRef} />
       </div>
       <form onSubmit={handleSend} className={styles.chatForm} style={{ display: "flex", gap: "0.5rem", padding: "0.5rem", borderTop: "2px solid var(--ink)" }}>
-        <input 
+          <input 
+          aria-label="Chat message"
           type="text" 
           value={input} 
           onChange={(e) => setInput(e.target.value)}

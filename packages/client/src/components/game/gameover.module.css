@@ -21,6 +21,8 @@
   letter-spacing: 1px;
 }
 
+.stats{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;color:var(--text-secondary);font-size:11px;text-transform:uppercase;letter-spacing:.5px}.stats span{padding:5px 8px;border:1px solid var(--border)}
+
 .results {
   display: flex;
   flex-direction: column;

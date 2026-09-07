@@ -1,10 +1,14 @@
+declare global { interface Window { webkitAudioContext?: typeof AudioContext; } }
+
 class SoundManager {
   private ctx: AudioContext | null = null;
   private enabled = true;
 
   init() {
     if (!this.ctx) {
-      this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const AudioContextCtor = window.AudioContext ?? window.webkitAudioContext;
+      if (!AudioContextCtor) return;
+      this.ctx = new AudioContextCtor();
     }
   }
 

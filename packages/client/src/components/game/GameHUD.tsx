@@ -16,6 +16,9 @@ export function GameHUD() {
   const board = useGameStore((s) => s.board);
   const resetGame = useGameStore((s) => s.resetGame);
   const mode = useGameStore((s) => s.mode);
+  const connected = useGameStore((s) => s.connected);
+  const roomCode = useGameStore((s) => s.roomCode);
+  const lobbyState = useGameStore((s) => s.lobbyState);
 
   if (!state || !board) return null;
 
@@ -25,9 +28,9 @@ export function GameHUD() {
   return (
     <div className={styles.hud}>
       <div className={styles.topBar}>
-        <div className={styles.boardInfo}>
-          {board.name}
-        </div>
+        <div><div className={styles.boardInfo}>{board.name}</div><div className={styles.settingsLine}>{mode === "multiplayer" ? `${lobbyState?.settings.maxPlayers ?? state.players.length} players · ${lobbyState?.settings.timerMode ? `${lobbyState.settings.timerMode}s timer` : "no timer"}` : "Local match"}</div></div>
+        {mode === "multiplayer" && <div className={`${styles.hudConnection} ${connected ? styles.hudOnline : styles.hudOffline}`}><span />{connected ? "Connected" : "Reconnecting…"}</div>}
+        {mode === "multiplayer" && roomCode && <div className={styles.roomBadge}>ROOM {roomCode}</div>}
         <button className={styles.leaveBtn} onClick={resetGame}>
           Leave Match
         </button>
@@ -44,13 +47,14 @@ export function GameHUD() {
               className={`${styles.playerScore} ${isCurrent ? styles.active : ""}`}
             >
               <div className={styles.playerLeft}>
-                <div
+              <div
                   className={styles.playerDot}
                   style={{ background: COLOR_VAR[player.color] }}
-                />
+                  aria-hidden="true"
+                /><span className={styles.srOnly}>{player.color} player</span>
                 <span className={styles.playerName}>{player.name}</span>
               </div>
-              <span className={styles.score}>{score}</span>
+              <span className={styles.score} aria-label={`${score} points`}>{score}</span>
             </div>
           );
         })}

@@ -75,7 +75,8 @@ let socketInstance: GameSocket | null = null;
 export function getSocket(): GameSocket {
   if (!socketInstance) {
     const configured = import.meta.env.VITE_WS_URL as string | undefined;
-    const fallback = `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.hostname}:3001`;
+    const devPort = (import.meta.env.VITE_WS_PORT as string | undefined) || "3001";
+    const fallback = `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.hostname}:${devPort}`;
     socketInstance = new GameSocket(configured || (import.meta.env.PROD ? `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}` : fallback));
   }
   return socketInstance;

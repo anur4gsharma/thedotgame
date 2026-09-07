@@ -61,6 +61,8 @@ export interface GameState {
   turnDeadline: number | null;
   timerMode: import("./board.js").TimerMode;
   timeoutCount: number;
+  startedAt: number;
+  completedAt: number | null;
 }
 
 // ─── Serialized State ───────────────────────────────────
@@ -83,6 +85,8 @@ export interface SerializedGameState {
   serverNow: number;
   timerMode: import("./board.js").TimerMode;
   timeoutCount: number;
+  startedAt: number;
+  completedAt: number | null;
 }
 
 // ─── Game Result ────────────────────────────────────────
