@@ -1,5 +1,6 @@
 .app {
   min-height: 100dvh;
+  overflow-x: clip;
   position: relative;
   background: var(--bg);
   color: var(--text);

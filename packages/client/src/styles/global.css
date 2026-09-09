@@ -56,7 +56,7 @@ html, body, #root {
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
+  overflow: visible;
   user-select: none;
   -webkit-user-select: none;
 }

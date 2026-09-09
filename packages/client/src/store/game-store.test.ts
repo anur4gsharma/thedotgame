@@ -173,6 +173,7 @@ describe("client useGameStore unit tests", () => {
           { id: "p-guest", name: "Guest", color: "red", connected: true, joinedAt: Date.now() },
         ],
         currentPlayerIndex: 0,
+        chancesRemaining: 2,
         edges: { "h-0-0": { owner: null, claimedAt: null } },
         cells: {},
         scores: {},

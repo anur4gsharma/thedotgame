@@ -27,4 +27,11 @@ describe("RoomManager authoritative flow", () => {
     const result = manager.requestRematch(room.code, "a");
     expect(result.error).toBeUndefined(); expect(result.room?.code).toBe(room.code); expect(result.room?.status).toBe("playing"); expect(result.room?.gameState?.sequenceNumber).toBe(0);
   });
+
+  it("does not restore a completed room through reconnect", () => {
+    const manager = new RoomManager(); const board = generateSquareBoard(2, 2);
+    const created = manager.createRoom(board.id, board, "a", "A", 2, "test"); const room = created.room;
+    room.status = "completed";
+    expect(manager.reconnectPlayer("a", room.code, {} as import("ws").WebSocket)).toEqual({ room: null, player: null, error: "This match has ended. Start a new game." });
+  });
 });
