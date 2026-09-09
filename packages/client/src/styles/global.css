@@ -61,6 +61,8 @@ html, body, #root {
   -webkit-user-select: none;
 }
 
+*, *::before, *::after { box-sizing: border-box; }
+
 body { margin: 0; }
 
 button {

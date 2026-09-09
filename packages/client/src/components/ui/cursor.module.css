@@ -1,9 +1,27 @@
-.ring,.dot{position:fixed;left:0;top:0;pointer-events:none;z-index:9999;transform:translate3d(-100px,-100px);will-change:transform;border-radius:50%;color:var(--text);}
-.clickAnimation{position:fixed;left:0;top:0;width:72px;height:72px;margin:-36px;object-fit:contain;pointer-events:none;z-index:9998;opacity:0;transform:translate3d(-100px,-100px);will-change:transform,opacity;mix-blend-mode:multiply;}.clickAnimationVisible{opacity:.72;}
-.ring{width:26px;height:26px;margin:-13px;border:1px solid currentColor;opacity:.45;transition:width 120ms ease,height 120ms ease,margin 120ms ease,opacity 120ms ease,border-color 120ms ease;}
-.dot{width:5px;height:5px;margin:-2.5px;background:currentColor;transition:transform 120ms ease,background 120ms ease;}
-.hover.ring{width:36px;height:36px;margin:-18px;opacity:.8}.click.ring{width:20px;height:20px;margin:-10px;opacity:.9}.click.dot{scale:.7}.board.ring{width:30px;height:30px;margin:-15px;border-color:var(--accent)}.grab.ring{border-style:dashed}.grabbing.ring{width:20px;height:20px;margin:-10px;border-style:dashed}.invalid.ring{border-color:var(--player-red);animation:reject 180ms ease-in-out 2}
-@keyframes reject{25%{margin-left:-16px}75%{margin-left:-10px}}
-@media (pointer:coarse){.ring,.dot{display:none}}
-@media (pointer:coarse){.clickAnimation{display:none}}
-@media (prefers-reduced-motion:reduce){.ring,.dot{transition-duration:80ms}.invalid.ring{animation:none}}
+.pointer {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 18px;
+  height: 25px;
+  pointer-events: none;
+  z-index: 9999;
+  background: #161616;
+  clip-path: polygon(0 0, 100% 68%, 62% 70%, 76% 100%, 57% 100%, 43% 75%, 0 100%);
+  transform: translate3d(-100px, -100px, 0);
+  transform-origin: 0 0;
+  will-change: transform;
+  transition: transform 120ms ease-out, opacity 120ms ease-out;
+}
+
+.pressed {
+  opacity: 0.72;
+}
+
+@media (pointer: coarse) {
+  .pointer { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pointer { transition-duration: 80ms; }
+}

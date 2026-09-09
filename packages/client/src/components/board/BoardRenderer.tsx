@@ -2,7 +2,6 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { useGameStore } from "../../store/game-store";
 import { DEFAULT_BOARD_VISUAL, type BoardDefinition, type PlayerColor } from "@dots-game/shared";
 import styles from "./board.module.css";
-import { setCursorState } from "../ui/Cursor";
 
 const PLAYER_INDEX: Record<PlayerColor, number> = { blue: 0, red: 1, green: 2, orange: 3 };
 
@@ -19,6 +18,7 @@ export function BoardRenderer({ board }: BoardRendererProps) {
   const mode = useGameStore((s) => s.mode);
 
   const svgRef = useRef<SVGSVGElement>(null);
+  const dragPreviewRef = useRef<SVGLineElement>(null);
   const [dragVertex, setDragVertex] = useState<string | null>(null);
   const [pointerPos, setPointerPos] = useState<{ x: number; y: number } | null>(null);
   const [hoverEdge, setHoverEdge] = useState<string | null>(null);
@@ -129,7 +129,6 @@ export function BoardRenderer({ board }: BoardRendererProps) {
       e.preventDefault();
       (e.target as Element).setPointerCapture?.(e.pointerId);
       setDragVertex(vertexId);
-      setCursorState("grabbing");
       const pos = vertexPos.get(vertexId);
       if (pos) setPointerPos({ x: pos.x, y: pos.y });
     },
@@ -142,7 +141,10 @@ export function BoardRenderer({ board }: BoardRendererProps) {
       if (!svgPt) return;
 
       if (dragVertex) {
-        setPointerPos(svgPt);
+        if (dragPreviewRef.current) {
+          dragPreviewRef.current.setAttribute("x2", String(svgPt.x));
+          dragPreviewRef.current.setAttribute("y2", String(svgPt.y));
+        }
         
         // Snap preview line to nearest valid vertex
         const target = findClosestVertex(svgPt.x, svgPt.y, dragVertex);
@@ -151,14 +153,12 @@ export function BoardRenderer({ board }: BoardRendererProps) {
           if (edgeId) {
             const edgeState = state?.edges.get(edgeId);
             if (!edgeState?.owner) {
-               setHoverEdge(edgeId);
-               setCursorState("board");
+               setHoverEdge((current) => current === edgeId ? current : edgeId);
                return;
             }
           }
         }
-        setHoverEdge(null);
-        setCursorState("grab");
+        setHoverEdge((current) => current === null ? current : null);
       }
     },
     [dragVertex, toSVGCoords, findClosestVertex, findEdge, state]
@@ -170,7 +170,6 @@ export function BoardRenderer({ board }: BoardRendererProps) {
         setDragVertex(null);
         setPointerPos(null);
         setHoverEdge(null);
-        setCursorState("default");
         return;
       }
 
@@ -191,7 +190,6 @@ export function BoardRenderer({ board }: BoardRendererProps) {
       setDragVertex(null);
       setPointerPos(null);
       setHoverEdge(null);
-      setCursorState("default");
     },
     [dragVertex, state, toSVGCoords, findClosestVertex, findEdge, commitMove],
   );
@@ -211,7 +209,7 @@ export function BoardRenderer({ board }: BoardRendererProps) {
       preserveAspectRatio="xMidYMid meet"
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
-      onPointerCancel={() => { setDragVertex(null); setPointerPos(null); setHoverEdge(null); setCursorState("default"); }}
+      onPointerCancel={() => { setDragVertex(null); setPointerPos(null); setHoverEdge(null); }}
       style={{ touchAction: "none" }}
       role="application"
     >
@@ -292,9 +290,8 @@ export function BoardRenderer({ board }: BoardRendererProps) {
                   strokeWidth={0.05}
                   strokeLinecap="round"
                   pointerEvents="stroke"
-                  data-cursor-lock="true"
-                  onPointerEnter={() => { setHoverEdge(edge.id); setCursorState("board"); }}
-                  onPointerLeave={() => { setHoverEdge((current) => current === edge.id ? null : current); setCursorState("default"); }}
+                  onPointerEnter={() => setHoverEdge(edge.id)}
+                  onPointerLeave={() => setHoverEdge((current) => current === edge.id ? null : current)}
                   onPointerDown={(event) => { event.preventDefault(); commitMove(edge.id); }}
                 />
               )}
@@ -318,6 +315,7 @@ export function BoardRenderer({ board }: BoardRendererProps) {
         if (!vA) return null;
         return (
           <line
+            ref={dragPreviewRef}
             x1={vA.x} y1={vA.y}
             x2={pointerPos.x} y2={pointerPos.y}
             stroke={currentColor}
