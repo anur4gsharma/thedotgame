@@ -161,6 +161,7 @@ export class RoomManager {
   reconnectPlayer(playerId: string, roomCode: string, ws: WebSocket): { room: Room | null; player: PlayerSession | null; error?: string } {
     const room = this.rooms.get(roomCode.toUpperCase()); const player = room?.players.get(playerId);
     if (!room || !player) return { room: null, player: null, error: "Your saved session is no longer available." };
+    if (room.status === "completed") return { room: null, player: null, error: "This match has ended. Start a new game." };
     if (player.ws && player.ws !== ws && player.ws.readyState === 1) player.ws.close(4001, "Session moved to another tab");
     player.ws = ws; player.connected = true; player.disconnectedAt = null; room.lastActivity = Date.now(); return { room, player };
   }

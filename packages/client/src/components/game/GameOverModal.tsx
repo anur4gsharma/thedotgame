@@ -41,7 +41,7 @@ export function GameOverModal() {
         ))}
       </div>
 
-      <button className={styles.playAgainBtn} onClick={mode === "multiplayer" ? rematch : resetGame}>{mode === "multiplayer" ? "Request rematch" : "Play Again"}</button>
+      <button className={styles.playAgainBtn} onClick={mode === "multiplayer" ? rematch : resetGame}>{mode === "multiplayer" ? "Request rematch" : "Back to home"}</button>
       {mode === "multiplayer" && <button className={styles.playAgainBtn} onClick={resetGame}>Leave match</button>}
     </div>
   );

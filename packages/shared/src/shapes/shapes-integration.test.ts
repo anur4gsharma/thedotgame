@@ -60,15 +60,15 @@ describe("multi-topology game engine integration", () => {
         expect(state.edges.get(edge1)?.owner).toBe("p1");
 
         // Edge already claimed cannot be claimed again
-        expect(GameEngine.isValidMove(state, board, "p2", edge1, state.sequenceNumber)).toEqual({
+        expect(GameEngine.isValidMove(state, board, "p1", edge1, state.sequenceNumber)).toEqual({
           valid: false,
           reason: "edge_already_claimed",
         });
 
         // Non-turn player cannot make move
-        if (state.currentPlayerIndex === 1 && claimableEdges.length > 1) {
+        if (state.currentPlayerIndex === 0 && claimableEdges.length > 1) {
           const edge2 = claimableEdges[1].id;
-          expect(GameEngine.isValidMove(state, board, "p1", edge2, state.sequenceNumber)).toEqual({
+          expect(GameEngine.isValidMove(state, board, "p2", edge2, state.sequenceNumber)).toEqual({
             valid: false,
             reason: "not_your_turn",
           });

@@ -1,5 +1,5 @@
 import { useGameStore } from "../../store/game-store";
-import type { PlayerColor } from "@dots-game/shared";
+import { CHANCES_PER_TURN, type PlayerColor } from "@dots-game/shared";
 import styles from "./game.module.css";
 import { TurnTimer } from "./TurnTimer";
 import { ChatPanel } from "./ChatPanel";
@@ -62,7 +62,7 @@ export function GameHUD() {
 
       {!isGameOver && (
         <div className={styles.turnIndicator}>
-          <span>{currentPlayer.name}'S TURN</span>
+          <span>{currentPlayer.name}'S TURN · {state.chancesRemaining} / {CHANCES_PER_TURN} CHANCES</span>
           {mode === "multiplayer" && <TurnTimer />}
         </div>
       )}

@@ -197,6 +197,7 @@ export function BoardRenderer({ board }: BoardRendererProps) {
   );
 
   const currentPlayer = state?.players[state?.currentPlayerIndex];
+  const canPlay = state.status === "playing";
   const currentColor = currentPlayer ? visual.playerColors[PLAYER_INDEX[currentPlayer.color]] : visual.turnColor;
   const lastMoveId = state?.moveHistory[state.moveHistory.length - 1]?.edgeId;
 
@@ -283,7 +284,7 @@ export function BoardRenderer({ board }: BoardRendererProps) {
 
           return (
             <g key={edge.id}>
-              {!isClaimed && (
+              {!isClaimed && canPlay && (
                 <line
                   x1={vA.x} y1={vA.y}
                   x2={vB.x} y2={vB.y}
@@ -340,7 +341,7 @@ export function BoardRenderer({ board }: BoardRendererProps) {
             r={isDragSource ? dotRadius * 1.5 : dotRadius}
             fill={isDragSource ? currentColor : visual.dotColor}
             className={styles.vertex}
-            onPointerDown={(e) => handlePointerDown(vertex.id, e)}
+            onPointerDown={(e) => { if (canPlay) handlePointerDown(vertex.id, e); }}
             style={{ cursor: "pointer" }}
           />
         );

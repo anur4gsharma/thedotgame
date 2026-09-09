@@ -11,9 +11,13 @@ describe("authoritative game safety", () => {
     const runtime = buildBoardRuntime(board);
     const initial = GameEngine.createGame(board, players);
     const next = GameEngine.applyMove(initial, board, runtime, "a", "h-0-0");
-    expect(GameEngine.isValidMove(next, board, "b", "h-0-0", 0)).toEqual({ valid: false, reason: "edge_already_claimed" });
-    expect(GameEngine.isValidMove(next, board, "a", "v-0-0", 0)).toEqual({ valid: false, reason: "not_your_turn" });
-    expect(GameEngine.isValidMove(next, board, "b", "v-0-0", next.sequenceNumber).valid).toBe(true);
+    expect(next.chancesRemaining).toBe(1);
+    expect(GameEngine.isValidMove(next, board, "a", "h-0-0", 0)).toEqual({ valid: false, reason: "edge_already_claimed" });
+    expect(GameEngine.isValidMove(next, board, "b", "v-0-0", 0)).toEqual({ valid: false, reason: "not_your_turn" });
+    const nextTurn = GameEngine.applyMove(next, board, runtime, "a", "v-0-0");
+    expect(nextTurn.currentPlayerIndex).toBe(1);
+    expect(nextTurn.chancesRemaining).toBe(2);
+    expect(GameEngine.isValidMove(nextTurn, board, "b", "v-1-0", nextTurn.sequenceNumber).valid).toBe(true);
   });
 
   it("expires a turn only at the server deadline and advances exactly once", () => {

@@ -10,6 +10,7 @@ import type {
   SerializedGameState,
 } from "../types/index.js";
 import { PLAYER_COLORS } from "../types/index.js";
+import { CHANCES_PER_TURN } from "../types/index.js";
 import type { TimerMode } from "../types/board.js";
 
 // ─── Board Runtime ──────────────────────────────────────
@@ -75,6 +76,7 @@ export class GameEngine {
       status: "playing",
       players,
       currentPlayerIndex: 0,
+      chancesRemaining: CHANCES_PER_TURN,
       edges,
       cells,
       scores,
@@ -157,6 +159,7 @@ export class GameEngine {
     return {
       ...state,
       currentPlayerIndex: nextPlayerIndex,
+      chancesRemaining: CHANCES_PER_TURN,
       turnDeadline: nextDeadline,
       timeoutCount: state.timeoutCount + 1,
       sequenceNumber: state.sequenceNumber + 1,
@@ -213,12 +216,6 @@ export class GameEngine {
       }
     }
 
-    // Determine next turn
-    const extraTurn = completedCells.length > 0;
-    const nextPlayerIndex = extraTurn
-      ? state.currentPlayerIndex // Same player gets another turn
-      : (state.currentPlayerIndex + 1) % state.players.length;
-
     // Record the move
     const moveRecord: MoveRecord = {
       playerId,
@@ -235,10 +232,25 @@ export class GameEngine {
     );
     const newStatus = allCellsCompleted ? "completed" : "playing";
 
+    // A turn has two chances. Completing a cell preserves the classic extra
+    // turn rule and starts that player's next turn with two fresh chances.
+    const extraTurn = completedCells.length > 0;
+    const nextPlayerIndex = extraTurn || state.chancesRemaining > 1
+      ? state.currentPlayerIndex
+      : (state.currentPlayerIndex + 1) % state.players.length;
+    const chancesRemaining = newStatus === "completed"
+      ? 0
+      : extraTurn
+        ? CHANCES_PER_TURN
+        : state.chancesRemaining > 1
+          ? state.chancesRemaining - 1
+          : CHANCES_PER_TURN;
+
     return {
       ...state,
       status: newStatus,
       currentPlayerIndex: nextPlayerIndex,
+      chancesRemaining,
       edges: newEdges,
       cells: newCells,
       scores: newScores,
@@ -296,6 +308,7 @@ export class GameEngine {
       status: state.status,
       players: state.players,
       currentPlayerIndex: state.currentPlayerIndex,
+      chancesRemaining: state.chancesRemaining,
       edges,
       cells,
       scores,
@@ -334,6 +347,7 @@ export class GameEngine {
       status: data.status,
       players: data.players,
       currentPlayerIndex: data.currentPlayerIndex,
+      chancesRemaining: data.chancesRemaining ?? CHANCES_PER_TURN,
       edges,
       cells,
       scores,

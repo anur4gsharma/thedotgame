@@ -1,20 +1,20 @@
 .app {
-  height: 100%;
+  min-height: 100dvh;
   position: relative;
   background: var(--bg);
   color: var(--text);
 }
 
 .gameContainer {
-  height: 100%;
+  min-height: 100dvh;
   display: flex;
   flex-direction: row;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .boardSection {
   flex: 1 1 70%;
-  height: 100%;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -25,7 +25,7 @@
   flex: 0 0 30%;
   min-width: 320px;
   max-width: 400px;
-  height: 100%;
+  min-height: 100dvh;
   border-left: 2px solid var(--text);
   background: var(--bg);
   display: flex;
@@ -38,12 +38,14 @@
   }
   
   .boardSection {
-    flex: 1 1 auto;
+    flex: 0 0 auto;
+    min-height: min(78dvh, 620px);
     padding: 24px;
   }
   
   .railSection {
     flex: 0 0 auto;
+    min-height: auto;
     min-width: 100%;
     border-left: none;
     border-top: 2px solid var(--text);

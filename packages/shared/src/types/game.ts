@@ -18,6 +18,8 @@ export interface Player {
 
 export type GameStatus = "waiting" | "playing" | "completed";
 
+export const CHANCES_PER_TURN = 2;
+
 // ─── Edge State ─────────────────────────────────────────
 
 export interface EdgeState {
@@ -53,6 +55,7 @@ export interface GameState {
   status: GameStatus;
   players: Player[];
   currentPlayerIndex: number;
+  chancesRemaining: number;
   edges: Map<string, EdgeState>;
   cells: Map<string, CellState>;
   scores: Map<string, number>;
@@ -76,6 +79,7 @@ export interface SerializedGameState {
   status: GameStatus;
   players: Player[];
   currentPlayerIndex: number;
+  chancesRemaining: number;
   edges: Record<string, EdgeState>;
   cells: Record<string, CellState>;
   scores: Record<string, number>;
