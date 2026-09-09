@@ -37,6 +37,47 @@ describe("authoritative game safety", () => {
     expect(restored.timerMode).toBe(30);
     expect(restored.startedAt).toBe(state.startedAt);
   });
+
+  it("gives each next player exactly two chances across a full turn cycle", () => {
+    const cycleBoard = generateSquareBoard(3, 3);
+    const runtime = buildBoardRuntime(cycleBoard);
+    const cyclePlayers = [
+      GameEngine.createPlayer("a", "A", 0),
+      GameEngine.createPlayer("b", "B", 1),
+      GameEngine.createPlayer("c", "C", 2),
+    ];
+    let state = GameEngine.createGame(cycleBoard, cyclePlayers);
+
+    const move = (edgeId: string) => {
+      const playerId = state.players[state.currentPlayerIndex].id;
+      state = GameEngine.applyMove(state, cycleBoard, runtime, playerId, edgeId);
+    };
+
+    expect(state.players[state.currentPlayerIndex].id).toBe("a");
+    expect(state.chancesRemaining).toBe(2);
+    move("h-0-0");
+    expect(state.players[state.currentPlayerIndex].id).toBe("a");
+    expect(state.chancesRemaining).toBe(1);
+    move("h-1-0");
+    expect(state.players[state.currentPlayerIndex].id).toBe("b");
+    expect(state.chancesRemaining).toBe(2);
+    move("h-2-0");
+    expect(state.players[state.currentPlayerIndex].id).toBe("b");
+    expect(state.chancesRemaining).toBe(1);
+    move("h-0-1");
+    expect(state.players[state.currentPlayerIndex].id).toBe("c");
+    expect(state.chancesRemaining).toBe(2);
+    move("h-1-1");
+    expect(state.players[state.currentPlayerIndex].id).toBe("c");
+    expect(state.chancesRemaining).toBe(1);
+    move("h-2-1");
+    expect(state.players[state.currentPlayerIndex].id).toBe("a");
+    expect(state.chancesRemaining).toBe(2);
+
+    const restored = GameEngine.deserialize(GameEngine.serialize(state));
+    expect(restored.players[restored.currentPlayerIndex].id).toBe("a");
+    expect(restored.chancesRemaining).toBe(2);
+  });
 });
 
 describe("protocol validation", () => {
