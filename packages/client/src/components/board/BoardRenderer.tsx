@@ -197,7 +197,7 @@ export function BoardRenderer({ board }: BoardRendererProps) {
   );
 
   const currentPlayer = state?.players[state?.currentPlayerIndex];
-  const canPlay = state.status === "playing";
+  const canPlay = state?.status === "playing";
   const currentColor = currentPlayer ? visual.playerColors[PLAYER_INDEX[currentPlayer.color]] : visual.turnColor;
   const lastMoveId = state?.moveHistory[state.moveHistory.length - 1]?.edgeId;
 
