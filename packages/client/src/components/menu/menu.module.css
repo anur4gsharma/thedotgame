@@ -166,3 +166,27 @@
 }
 
 .colorGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.colorInput{width:100%;height:34px;padding:2px;border:1px solid var(--border);background:transparent;cursor:pointer}.previewSwatch{height:54px;border:2px solid;display:flex;align-items:center;justify-content:space-evenly}.previewSwatch span{width:8px;height:8px;border-radius:50%;box-shadow:20px 0 0 currentColor,40px 0 0 currentColor}
+
+.terms {
+  margin-top: 64px;
+  padding: 16px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  background: var(--bg);
+  opacity: 0.8;
+  border-top: 1px dashed var(--text-tertiary);
+}
+
+.terms p {
+  margin-bottom: 8px;
+}
+
+.terms ul {
+  padding-left: 16px;
+  margin-top: 4px;
+}
+
+.terms li {
+  margin-bottom: 4px;
+}
