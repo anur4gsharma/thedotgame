@@ -64,7 +64,7 @@ export function BoardRenderer({ board }: BoardRendererProps) {
   }, [board]);
 
   const dotRadius = 0.015 * visual.dotSize;
-  const hitRadius = 0.12;
+  const hitRadius = 0.22;
 
   const commitMove = useCallback(
     (edgeId: string) => {
@@ -103,23 +103,31 @@ export function BoardRenderer({ board }: BoardRendererProps) {
     [],
   );
 
-  const findClosestVertex = useCallback(
-    (px: number, py: number, exclude?: string): string | null => {
+  /** Find the closest vertex that has an unclaimed edge to `source`. */
+  const findClosestValidTarget = useCallback(
+    (px: number, py: number, source: string): string | null => {
+      const sourceEdges = vertexEdges.get(source) || [];
       let closest: string | null = null;
       let minDist = hitRadius;
-      for (const v of board.vertices) {
-        if (v.id === exclude) continue;
+      for (const eid of sourceEdges) {
+        const edgeState = state?.edges.get(eid);
+        if (edgeState?.owner) continue; // already claimed
+        const pair = edgeVertices.get(eid);
+        if (!pair) continue;
+        const neighborId = pair.a === source ? pair.b : pair.a;
+        const v = vertexPos.get(neighborId);
+        if (!v) continue;
         const dx = v.x - px;
         const dy = v.y - py;
         const d = Math.sqrt(dx * dx + dy * dy);
         if (d < minDist) {
           minDist = d;
-          closest = v.id;
+          closest = neighborId;
         }
       }
       return closest;
     },
-    [board, hitRadius],
+    [vertexEdges, edgeVertices, vertexPos, state, hitRadius],
   );
 
   const handlePointerDown = useCallback(
@@ -142,21 +150,15 @@ export function BoardRenderer({ board }: BoardRendererProps) {
 
       if (dragVertex) {
         setPointerPos(svgPt);
-        const target = findClosestVertex(svgPt.x, svgPt.y, dragVertex);
+        const target = findClosestValidTarget(svgPt.x, svgPt.y, dragVertex);
         if (target) {
-          const edgeId = findEdge(dragVertex, target);
-          if (edgeId) {
-            const edgeState = state?.edges.get(edgeId);
-            if (!edgeState?.owner) {
-               setDragTarget((current) => current === target ? current : target);
-               return;
-            }
-          }
+          setDragTarget((current) => current === target ? current : target);
+        } else {
+          setDragTarget((current) => current === null ? current : null);
         }
-        setDragTarget((current) => current === null ? current : null);
       }
     },
-    [dragVertex, toSVGCoords, findClosestVertex, findEdge, state]
+    [dragVertex, toSVGCoords, findClosestValidTarget]
   );
 
   const handlePointerUp = useCallback(
@@ -170,14 +172,11 @@ export function BoardRenderer({ board }: BoardRendererProps) {
 
       const svgPt = toSVGCoords(e.clientX, e.clientY);
       if (svgPt) {
-        const target = dragTarget ?? findClosestVertex(svgPt.x, svgPt.y, dragVertex);
+        const target = dragTarget ?? findClosestValidTarget(svgPt.x, svgPt.y, dragVertex);
         if (target) {
           const edgeId = findEdge(dragVertex, target);
           if (edgeId) {
-            const edgeState = state.edges.get(edgeId);
-            if (edgeState && !edgeState.owner) {
-              commitMove(edgeId);
-            }
+            commitMove(edgeId);
           }
         }
       }
@@ -186,7 +185,7 @@ export function BoardRenderer({ board }: BoardRendererProps) {
       setPointerPos(null);
       setDragTarget(null);
     },
-    [dragVertex, dragTarget, state, toSVGCoords, findClosestVertex, findEdge, commitMove],
+    [dragVertex, dragTarget, state, toSVGCoords, findClosestValidTarget, findEdge, commitMove],
   );
 
   const currentPlayer = state?.players[state?.currentPlayerIndex];
@@ -294,6 +293,36 @@ export function BoardRenderer({ board }: BoardRendererProps) {
             </g>
           );
         })}
+
+      {/* Guide lines: show all valid (unclaimed) connections from the drag source */}
+      {dragVertex && (() => {
+        const vA = vertexPos.get(dragVertex);
+        if (!vA) return null;
+        const sourceEdges = vertexEdges.get(dragVertex) || [];
+        return sourceEdges.map((eid) => {
+          const edgeState = state.edges.get(eid);
+          if (edgeState?.owner) return null; // already claimed
+          if (dragEdge === eid) return null; // the active snap line handles this
+          const pair = edgeVertices.get(eid);
+          if (!pair) return null;
+          const neighborId = pair.a === dragVertex ? pair.b : pair.a;
+          const vB = vertexPos.get(neighborId);
+          if (!vB) return null;
+          return (
+            <line
+              key={`guide-${eid}`}
+              x1={vA.x} y1={vA.y}
+              x2={vB.x} y2={vB.y}
+              stroke={currentColor}
+              strokeWidth={0.008}
+              strokeDasharray="0.03 0.03"
+              strokeLinecap="round"
+              opacity={0.25}
+              pointerEvents="none"
+            />
+          );
+        });
+      })()}
 
       {/* Drag preview: the line snaps to a valid neighbouring dot. */}
       {dragVertex && pointerPos && (() => {
