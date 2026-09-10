@@ -294,35 +294,6 @@ export function BoardRenderer({ board }: BoardRendererProps) {
           );
         })}
 
-      {/* Guide lines: show all valid (unclaimed) connections from the drag source */}
-      {dragVertex && (() => {
-        const vA = vertexPos.get(dragVertex);
-        if (!vA) return null;
-        const sourceEdges = vertexEdges.get(dragVertex) || [];
-        return sourceEdges.map((eid) => {
-          const edgeState = state.edges.get(eid);
-          if (edgeState?.owner) return null; // already claimed
-          if (dragEdge === eid) return null; // the active snap line handles this
-          const pair = edgeVertices.get(eid);
-          if (!pair) return null;
-          const neighborId = pair.a === dragVertex ? pair.b : pair.a;
-          const vB = vertexPos.get(neighborId);
-          if (!vB) return null;
-          return (
-            <line
-              key={`guide-${eid}`}
-              x1={vA.x} y1={vA.y}
-              x2={vB.x} y2={vB.y}
-              stroke={currentColor}
-              strokeWidth={0.008}
-              strokeDasharray="0.03 0.03"
-              strokeLinecap="round"
-              opacity={0.25}
-              pointerEvents="none"
-            />
-          );
-        });
-      })()}
 
       {/* Drag preview: the line snaps to a valid neighbouring dot. */}
       {dragVertex && pointerPos && (() => {

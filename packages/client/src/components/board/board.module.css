@@ -80,18 +80,13 @@
   transform-box: fill-box;
 }
 
-.dragPreview,
-.dragSnap {
-  stroke-dasharray: 0.08 0.05;
+.dragPreview {
+  stroke-dasharray: 0.04 0.03;
 }
 
 .dragSnap {
-  animation: dragSnap 420ms var(--ease-out) infinite alternate;
-}
-
-@keyframes dragSnap {
-  from { opacity: 0.55; }
-  to { opacity: 0.95; }
+  opacity: 0.9;
+  transition: opacity var(--duration-fast) var(--ease-out);
 }
 
 .vertexHitArea {

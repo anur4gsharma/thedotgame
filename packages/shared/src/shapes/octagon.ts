@@ -108,72 +108,75 @@ export function generateOctagonBoard(
     }
   }
 
-  // Connect consecutive rings
+  // Connect consecutive rings per-side with symmetric triangulation
   for (let r = 0; r < allRings.length - 1; r++) {
     const rInner = allRings[r];
     const rOuter = allRings[r + 1];
-    const n = rInner.length;
-    const m = rOuter.length;
+    const segsInner = r + 1;
+    const segsOuter = r + 2;
 
-    let i = 0;
-    let j = 0;
-
-    while (i < n || j < m) {
-      if (i === n && j === m) break;
-
-      const nextI = i + 1;
-      const nextJ = j + 1;
-
-      let advanceInner = false;
-      if (i === n) {
-        advanceInner = false;
-      } else if (j === m) {
-        advanceInner = true;
-      } else {
-        const fracI = nextI / n;
-        const fracJ = nextJ / m;
-        // Float comparison with small epsilon
-        if (Math.abs(fracI - fracJ) < 1e-9) {
-          advanceInner = false; // Always advance outer on ties
-        } else if (fracI < fracJ) {
-          advanceInner = true;
-        } else {
-          advanceInner = false;
-        }
+    for (let side = 0; side < SIDES; side++) {
+      const V: string[] = [];
+      for (let k = 0; k <= segsInner; k++) {
+        V.push(rInner[(side * segsInner + k) % rInner.length]);
+      }
+      const W: string[] = [];
+      for (let k = 0; k <= segsOuter; k++) {
+        W.push(rOuter[(side * segsOuter + k) % rOuter.length]);
       }
 
-      if (advanceInner) {
-        const vO = rOuter[j % m];
-        const vI = rInner[i % n];
-        const vINext = rInner[nextI % n];
-
-        const e1 = addEdge(vO, vI);
-        const e2 = addEdge(vI, vINext);
-        const e3 = addEdge(vINext, vO);
-
-        cells.push({
-          id: `c-${cellCounter++}`,
-          type: 'triangle',
-          edgeIds: [e1, e2, e3],
-          vertexIds: [vO, vI, vINext],
-        });
-        i = nextI;
-      } else {
-        const vI = rInner[i % n];
-        const vO = rOuter[j % m];
-        const vONext = rOuter[nextJ % m];
-
-        const e1 = addEdge(vI, vO);
-        const e2 = addEdge(vO, vONext);
-        const e3 = addEdge(vONext, vI);
-
-        cells.push({
-          id: `c-${cellCounter++}`,
-          type: 'triangle',
-          edgeIds: [e1, e2, e3],
-          vertexIds: [vI, vO, vONext],
-        });
-        j = nextJ;
+      let i = 0;
+      let j = 0;
+      while (i < segsInner || j < segsOuter) {
+        if (i === segsInner) {
+          const e1 = addEdge(W[j], W[j + 1]);
+          const e2 = addEdge(W[j + 1], V[i]);
+          const e3 = addEdge(V[i], W[j]);
+          cells.push({
+            id: `c-${cellCounter++}`,
+            type: 'triangle',
+            edgeIds: [e1, e2, e3],
+            vertexIds: [W[j], W[j + 1], V[i]],
+          });
+          j++;
+        } else if (j === segsOuter) {
+          const e1 = addEdge(V[i], V[i + 1]);
+          const e2 = addEdge(V[i + 1], W[j]);
+          const e3 = addEdge(W[j], V[i]);
+          cells.push({
+            id: `c-${cellCounter++}`,
+            type: 'triangle',
+            edgeIds: [e1, e2, e3],
+            vertexIds: [V[i], V[i + 1], W[j]],
+          });
+          i++;
+        } else {
+          const midV = (i + 0.5) / segsInner;
+          const midW = (j + 0.5) / segsOuter;
+          if (midW < midV) {
+            const e1 = addEdge(W[j], W[j + 1]);
+            const e2 = addEdge(W[j + 1], V[i]);
+            const e3 = addEdge(V[i], W[j]);
+            cells.push({
+              id: `c-${cellCounter++}`,
+              type: 'triangle',
+              edgeIds: [e1, e2, e3],
+              vertexIds: [V[i], W[j], W[j + 1]],
+            });
+            j++;
+          } else {
+            const e1 = addEdge(V[i], V[i + 1]);
+            const e2 = addEdge(V[i + 1], W[j]);
+            const e3 = addEdge(W[j], V[i]);
+            cells.push({
+              id: `c-${cellCounter++}`,
+              type: 'triangle',
+              edgeIds: [e1, e2, e3],
+              vertexIds: [W[j], V[i], V[i + 1]],
+            });
+            i++;
+          }
+        }
       }
     }
   }
