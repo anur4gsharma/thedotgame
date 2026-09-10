@@ -40,22 +40,51 @@ export function generateOctagonBoard(
   // Center vertex
   vertices.push({ id: 'v-center', x: 0.5, y: 0.5 });
 
-  // Generate concentric rings
+  // ── Octagon corner angles ──────────────────────────────
+  // A regular octagon has 8 corners. We start at -π/8 so the first
+  // flat side sits across the top.  Corner k is at angle:
+  //   θ_k = k * π/4 − π/8
+  const SIDES = 8;
+  const CORNER_STEP = (2 * Math.PI) / SIDES;        // π/4
+  const ANGLE_OFFSET = -Math.PI / SIDES;             // −π/8
+
+  /**
+   * Return the (x, y) of a point that lies on a regular octagon
+   * of the given `radius` (circumradius), centred at (cx, cy).
+   *
+   * `side`  – which of the 8 sides (0‒7)
+   * `frac`  – fractional position along that side (0 = start corner, 1 = end corner)
+   */
+  function octPoint(
+    cx: number, cy: number, radius: number,
+    side: number, frac: number,
+  ): { x: number; y: number } {
+    const a0 = side * CORNER_STEP + ANGLE_OFFSET;
+    const a1 = (side + 1) * CORNER_STEP + ANGLE_OFFSET;
+    const x0 = cx + radius * Math.cos(a0);
+    const y0 = cy + radius * Math.sin(a0);
+    const x1 = cx + radius * Math.cos(a1);
+    const y1 = cy + radius * Math.sin(a1);
+    return { x: x0 + (x1 - x0) * frac, y: y0 + (y1 - y0) * frac };
+  }
+
+  // Generate concentric octagonal rings
   const allRings: string[][] = [];
 
   for (let ring = 1; ring <= rings; ring++) {
     const radius = (ring / rings) * 0.4;
-    const numVertices = 8 * ring;
+    const dotsPerSide = ring;                         // 8 * ring total
     const ringVertices: string[] = [];
 
-    for (let i = 0; i < numVertices; i++) {
-      const angle = (2 * Math.PI * i) / numVertices - Math.PI / 8;
-      const x = 0.5 + radius * Math.cos(angle);
-      const y = 0.5 + radius * Math.sin(angle);
-      const vId = `v-${ring}-${i}`;
+    for (let side = 0; side < SIDES; side++) {
+      for (let d = 0; d < dotsPerSide; d++) {
+        const frac = d / dotsPerSide;                 // 0 .. (dotsPerSide-1)/dotsPerSide
+        const { x, y } = octPoint(0.5, 0.5, radius, side, frac);
+        const vId = `v-${ring}-${side * dotsPerSide + d}`;
 
-      vertices.push({ id: vId, x, y });
-      ringVertices.push(vId);
+        vertices.push({ id: vId, x, y });
+        ringVertices.push(vId);
+      }
     }
 
     allRings.push(ringVertices);
