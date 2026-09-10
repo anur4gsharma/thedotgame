@@ -1,0 +1,89 @@
+.container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.15;
+}
+
+.horse {
+  width: 300px;
+  height: 300px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation: gallop 6s linear infinite;
+}
+
+.dot {
+  fill: currentColor;
+}
+
+.legFront1 {
+  transform-origin: 60px 40px;
+  animation: legSwing 0.6s ease-in-out infinite alternate;
+}
+
+.legFront2 {
+  transform-origin: 60px 40px;
+  animation: legSwing 0.6s ease-in-out infinite alternate-reverse;
+  animation-delay: -0.3s;
+}
+
+.legBack1 {
+  transform-origin: 40px 40px;
+  animation: legSwing 0.6s ease-in-out infinite alternate;
+  animation-delay: -0.15s;
+}
+
+.legBack2 {
+  transform-origin: 40px 40px;
+  animation: legSwing 0.6s ease-in-out infinite alternate-reverse;
+  animation-delay: -0.45s;
+}
+
+.tail {
+  transform-origin: 30px 40px;
+  animation: tailWag 0.6s ease-in-out infinite alternate;
+}
+
+@keyframes legSwing {
+  0% {
+    transform: rotate(-30deg);
+  }
+  100% {
+    transform: rotate(30deg);
+  }
+}
+
+@keyframes tailWag {
+  0% {
+    transform: rotate(-10deg);
+  }
+  100% {
+    transform: rotate(20deg);
+  }
+}
+
+@keyframes gallop {
+  0% {
+    transform: translate(-50%, -50%) translateY(0);
+  }
+  25% {
+    transform: translate(-50%, -50%) translateY(-10px);
+  }
+  50% {
+    transform: translate(-50%, -50%) translateY(0);
+  }
+  75% {
+    transform: translate(-50%, -50%) translateY(5px);
+  }
+  100% {
+    transform: translate(-50%, -50%) translateY(0);
+  }
+}

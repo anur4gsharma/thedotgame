@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useGameStore } from "../../store/game-store";
 import styles from "./menu.module.css";
+import { HorseAnimation } from "../ui/HorseAnimation";
 
 export function StartMenu() {
   const [name, setName] = useState("");
@@ -15,6 +16,7 @@ export function StartMenu() {
 
   return (
     <div className={styles.menu}>
+      <HorseAnimation />
       <div className={styles.content}>
         <div className={styles.logo}>
           <h1 className={styles.title}>THE DOT GAME</h1>
@@ -39,6 +41,17 @@ export function StartMenu() {
             Continue
           </button>
         </form>
+        
+        <div className={styles.terms}>
+          <p><strong>Terms & Conditions</strong></p>
+          <p>By playing, you agree to respectful gameplay.</p>
+          <p><strong>Chat Guidelines:</strong></p>
+          <ul>
+            <li>No hate speech or harassment.</li>
+            <li>No spamming or self-promotion.</li>
+            <li>Keep it friendly and constructive.</li>
+          </ul>
+        </div>
       </div>
     </div>
   );

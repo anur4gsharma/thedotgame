@@ -18,10 +18,15 @@ export function BoardRenderer({ board }: BoardRendererProps) {
   const mode = useGameStore((s) => s.mode);
 
   const svgRef = useRef<SVGSVGElement>(null);
-  const [dragVertex, setDragVertex] = useState<string | null>(null);
-  const [pointerPos, setPointerPos] = useState<{ x: number; y: number } | null>(null);
-  const [dragTarget, setDragTarget] = useState<string | null>(null);
+  const dragLineRef = useRef<SVGLineElement>(null);
+  
+  const dragStartPosRef = useRef<{x: number, y: number} | null>(null);
+  const dragStartDotRef = useRef<string | null>(null);
+  const isDraggingRef = useRef(false);
 
+  const [hoverDot, setHoverDot] = useState<string | null>(null);
+  const [candidateEdge, setCandidateEdge] = useState<string | null>(null);
+  
   const viewBox = useMemo(() => {
     let minX = Infinity, maxX = -Infinity;
     let minY = Infinity, maxY = -Infinity;
@@ -64,7 +69,7 @@ export function BoardRenderer({ board }: BoardRendererProps) {
   }, [board]);
 
   const dotRadius = 0.015 * visual.dotSize;
-  const hitRadius = 0.22;
+  const hitRadius = 0.15; // Magnetic radius
 
   const commitMove = useCallback(
     (edgeId: string) => {
@@ -103,44 +108,91 @@ export function BoardRenderer({ board }: BoardRendererProps) {
     [],
   );
 
-  /** Find the closest vertex that has an unclaimed edge to `source`. */
-  const findClosestValidTarget = useCallback(
-    (px: number, py: number, source: string): string | null => {
-      const sourceEdges = vertexEdges.get(source) || [];
-      let closest: string | null = null;
-      let minDist = hitRadius;
+  const findNearestDot = useCallback((x: number, y: number, maxDist: number) => {
+    let nearest: string | null = null;
+    let minDist = maxDist;
+    for (const [id, pos] of vertexPos.entries()) {
+      const dx = pos.x - x;
+      const dy = pos.y - y;
+      const d = Math.sqrt(dx * dx + dy * dy);
+      if (d < minDist) {
+        minDist = d;
+        nearest = id;
+      }
+    }
+    return nearest;
+  }, [vertexPos]);
+
+  const determineCandidateEdge = useCallback((startPos: {x: number, y: number}, currentPos: {x: number, y: number}, startDot: string | null) => {
+    let bestEdge: string | null = null;
+    
+    if (startDot) {
+      // If we started from a dot, we look for a valid neighbor
+      const sourceEdges = vertexEdges.get(startDot) || [];
+      let minDist = 0.35; // How far to snap to a neighbor
       for (const eid of sourceEdges) {
         const edgeState = state?.edges.get(eid);
-        if (edgeState?.owner) continue; // already claimed
+        if (edgeState?.owner) continue;
         const pair = edgeVertices.get(eid);
         if (!pair) continue;
-        const neighborId = pair.a === source ? pair.b : pair.a;
+        const neighborId = pair.a === startDot ? pair.b : pair.a;
         const v = vertexPos.get(neighborId);
         if (!v) continue;
-        const dx = v.x - px;
-        const dy = v.y - py;
-        const d = Math.sqrt(dx * dx + dy * dy);
+        
+        // Is the current pointer moving towards this neighbor?
+        // Check distance from currentPos to the neighbor
+        const d = Math.sqrt((v.x - currentPos.x) ** 2 + (v.y - currentPos.y) ** 2);
         if (d < minDist) {
           minDist = d;
-          closest = neighborId;
+          bestEdge = eid;
         }
       }
-      return closest;
-    },
-    [vertexEdges, edgeVertices, vertexPos, state, hitRadius],
-  );
+    } else {
+      // Free drag: find closest dot to start, closest dot to end
+      const dot1 = findNearestDot(startPos.x, startPos.y, 0.4);
+      const dot2 = findNearestDot(currentPos.x, currentPos.y, 0.4);
+      if (dot1 && dot2 && dot1 !== dot2) {
+        const edgeId = findEdge(dot1, dot2);
+        if (edgeId) {
+          const edgeState = state?.edges.get(edgeId);
+          if (!edgeState?.owner) {
+            bestEdge = edgeId;
+          }
+        }
+      }
+    }
+    return bestEdge;
+  }, [state, vertexEdges, edgeVertices, vertexPos, findNearestDot, findEdge]);
 
   const handlePointerDown = useCallback(
-    (vertexId: string, e: React.PointerEvent) => {
-      if (!state) return;
+    (e: React.PointerEvent) => {
+      if (!state || state.status !== "playing") return;
+      
+      const svgPt = toSVGCoords(e.clientX, e.clientY);
+      if (!svgPt) return;
+
       e.preventDefault();
       (e.target as Element).setPointerCapture?.(e.pointerId);
-      setDragVertex(vertexId);
-      const pos = vertexPos.get(vertexId);
-      if (pos) setPointerPos({ x: pos.x, y: pos.y });
-      setDragTarget(null);
+      
+      const nearest = findNearestDot(svgPt.x, svgPt.y, hitRadius);
+      
+      isDraggingRef.current = true;
+      dragStartPosRef.current = svgPt;
+      dragStartDotRef.current = nearest;
+      
+      setHoverDot(nearest);
+      
+      if (dragLineRef.current) {
+        const startX = nearest ? vertexPos.get(nearest)!.x : svgPt.x;
+        const startY = nearest ? vertexPos.get(nearest)!.y : svgPt.y;
+        dragLineRef.current.setAttribute("x1", startX.toString());
+        dragLineRef.current.setAttribute("y1", startY.toString());
+        dragLineRef.current.setAttribute("x2", svgPt.x.toString());
+        dragLineRef.current.setAttribute("y2", svgPt.y.toString());
+        dragLineRef.current.style.opacity = "1";
+      }
     },
-    [state, vertexPos],
+    [state, toSVGCoords, findNearestDot, vertexPos]
   );
 
   const handlePointerMove = useCallback(
@@ -148,51 +200,53 @@ export function BoardRenderer({ board }: BoardRendererProps) {
       const svgPt = toSVGCoords(e.clientX, e.clientY);
       if (!svgPt) return;
 
-      if (dragVertex) {
-        setPointerPos(svgPt);
-        const target = findClosestValidTarget(svgPt.x, svgPt.y, dragVertex);
-        if (target) {
-          setDragTarget((current) => current === target ? current : target);
-        } else {
-          setDragTarget((current) => current === null ? current : null);
+      if (isDraggingRef.current && dragStartPosRef.current) {
+        // Update raw DOM line
+        if (dragLineRef.current) {
+          dragLineRef.current.setAttribute("x2", svgPt.x.toString());
+          dragLineRef.current.setAttribute("y2", svgPt.y.toString());
         }
+        
+        // Find candidate edge
+        const edge = determineCandidateEdge(dragStartPosRef.current, svgPt, dragStartDotRef.current);
+        setCandidateEdge(edge);
+        
+      } else {
+        // Hover mode
+        const nearest = findNearestDot(svgPt.x, svgPt.y, hitRadius);
+        setHoverDot(nearest);
       }
     },
-    [dragVertex, toSVGCoords, findClosestValidTarget]
+    [toSVGCoords, findNearestDot, determineCandidateEdge]
   );
 
   const handlePointerUp = useCallback(
     (e: React.PointerEvent) => {
-      if (!dragVertex || !state) {
-        setDragVertex(null);
-        setPointerPos(null);
-        setDragTarget(null);
-        return;
+      if (isDraggingRef.current && candidateEdge) {
+        commitMove(candidateEdge);
       }
-
+      
+      isDraggingRef.current = false;
+      dragStartPosRef.current = null;
+      dragStartDotRef.current = null;
+      
+      if (dragLineRef.current) {
+        dragLineRef.current.style.opacity = "0";
+      }
+      
+      setCandidateEdge(null);
+      // Re-evaluate hover immediately
       const svgPt = toSVGCoords(e.clientX, e.clientY);
       if (svgPt) {
-        const target = dragTarget ?? findClosestValidTarget(svgPt.x, svgPt.y, dragVertex);
-        if (target) {
-          const edgeId = findEdge(dragVertex, target);
-          if (edgeId) {
-            commitMove(edgeId);
-          }
-        }
+        setHoverDot(findNearestDot(svgPt.x, svgPt.y, hitRadius));
       }
-
-      setDragVertex(null);
-      setPointerPos(null);
-      setDragTarget(null);
     },
-    [dragVertex, dragTarget, state, toSVGCoords, findClosestValidTarget, findEdge, commitMove],
+    [candidateEdge, commitMove, toSVGCoords, findNearestDot]
   );
 
   const currentPlayer = state?.players[state?.currentPlayerIndex];
-  const canPlay = state?.status === "playing";
   const currentColor = currentPlayer ? visual.playerColors[PLAYER_INDEX[currentPlayer.color]] : visual.turnColor;
   const lastMoveId = state?.moveHistory[state.moveHistory.length - 1]?.edgeId;
-  const dragEdge = dragVertex && dragTarget ? findEdge(dragVertex, dragTarget) : null;
 
   if (!state) return null;
 
@@ -202,11 +256,13 @@ export function BoardRenderer({ board }: BoardRendererProps) {
       className={styles.board}
       viewBox={viewBox}
       preserveAspectRatio="xMidYMid meet"
+      onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
-      onPointerCancel={() => { setDragVertex(null); setPointerPos(null); setDragTarget(null); }}
+      onPointerCancel={handlePointerUp}
       style={{ touchAction: "none" }}
       role="application"
+      data-cursor="board"
     >
       <defs>
         <pattern id="graph-paper" x="0" y="0" width="0.1" height="0.1" patternUnits="userSpaceOnUse">
@@ -240,7 +296,7 @@ export function BoardRenderer({ board }: BoardRendererProps) {
         );
       })}
 
-      {/* All claimable edges (for hover zones & backgrounds) */}
+      {/* Edges */}
       {board.edges
         .filter((e) => e.claimable)
         .map((edge) => {
@@ -251,14 +307,14 @@ export function BoardRenderer({ board }: BoardRendererProps) {
           const edgeState = state.edges.get(edge.id);
           const isClaimed = edgeState?.owner != null;
           const isPending = pendingEdge === edge.id;
-          const isHovered = dragEdge === edge.id;
+          const isCandidate = candidateEdge === edge.id;
           const isLastMove = lastMoveId === edge.id;
 
           const owner = isClaimed
             ? state.players.find((p) => p.id === edgeState.owner)
             : null;
 
-          if (!isClaimed && !isPending && !isHovered) return null;
+          if (!isClaimed && !isPending && !isCandidate) return null;
 
           let strokeColor = visual.lineColor;
           let strokeWidth = 0.016;
@@ -267,78 +323,63 @@ export function BoardRenderer({ board }: BoardRendererProps) {
           
           if (isClaimed && owner) {
             strokeColor = visual.playerColors[PLAYER_INDEX[owner.color]];
-            if (isLastMove) {
-              strokeWidth = 0.024; // Thicker for last move
-            }
+            if (isLastMove) strokeWidth = 0.024;
             edgeClass = `${styles.edge} ${styles.edgeDrawn || ""}`;
-          } else if (isPending || isHovered) {
+          } else if (isPending || isCandidate) {
             strokeColor = currentColor;
-            opacity = isPending ? 0.6 : 0.45;
-            edgeClass = `${styles.edge} ${isPending ? styles.edgePending : styles.edgeSnap}`;
+            opacity = isPending ? 0.6 : 0.85;
+            strokeWidth = 0.024;
+            edgeClass = `${styles.edge} ${isPending ? styles.edgePending : styles.dragSnap}`;
           }
 
           return (
-            <g key={edge.id}>
-              <line
-                x1={vA.x} y1={vA.y}
-                x2={vB.x} y2={vB.y}
-                stroke={strokeColor}
-                strokeWidth={strokeWidth * visual.lineThickness}
-                opacity={opacity}
-                strokeLinecap="round"
-                className={edgeClass}
-                pathLength={1}
-                pointerEvents="none"
-              />
-            </g>
+            <line
+              key={edge.id}
+              x1={vA.x} y1={vA.y}
+              x2={vB.x} y2={vB.y}
+              stroke={strokeColor}
+              strokeWidth={strokeWidth * visual.lineThickness}
+              opacity={opacity}
+              strokeLinecap="round"
+              className={edgeClass}
+              pointerEvents="none"
+            />
           );
         })}
 
-
-      {/* Drag preview: the line snaps to a valid neighbouring dot. */}
-      {dragVertex && pointerPos && (() => {
-        const vA = vertexPos.get(dragVertex);
-        if (!vA) return null;
-        const vB = dragTarget ? vertexPos.get(dragTarget) : pointerPos;
-        if (!vB) return null;
-        return (
-          <line
-            x1={vA.x} y1={vA.y}
-            x2={vB.x} y2={vB.y}
-            stroke={currentColor}
-            strokeWidth={dragTarget ? 0.024 : 0.014}
-            strokeLinecap="round"
-            opacity={dragTarget ? 0.85 : 0.32}
-            className={dragTarget ? styles.dragSnap : styles.dragPreview}
-            pointerEvents="none"
-          />
-        );
-      })()}
+      {/* Free drag line (controlled natively via refs) */}
+      <line
+        ref={dragLineRef}
+        stroke={currentColor}
+        strokeWidth={0.012}
+        strokeLinecap="round"
+        opacity="0"
+        className={styles.dragPreview}
+        pointerEvents="none"
+      />
 
       {/* Vertices */}
       {board.vertices.map((vertex) => {
-        const isDragSource = dragVertex === vertex.id;
-        const isDragTarget = dragTarget === vertex.id;
+        const isHovered = hoverDot === vertex.id;
+        // The dot is highlighted if it's the hover target OR if it's part of the candidate edge
+        let isHighlighted = isHovered;
+        if (candidateEdge) {
+          const pair = edgeVertices.get(candidateEdge);
+          if (pair && (pair.a === vertex.id || pair.b === vertex.id)) {
+            isHighlighted = true;
+          }
+        }
 
         return (
-          <g key={vertex.id}>
-            <circle
-              cx={vertex.x}
-              cy={vertex.y}
-              r={Math.max(dotRadius * 3, 0.045)}
-              fill="transparent"
-              className={styles.vertexHitArea}
-              onPointerDown={(e) => { if (canPlay) handlePointerDown(vertex.id, e); }}
-            />
-            <circle
-              cx={vertex.x}
-              cy={vertex.y}
-              r={isDragSource ? dotRadius * 1.5 : isDragTarget ? dotRadius * 1.8 : dotRadius}
-              fill={isDragSource ? currentColor : isDragTarget ? currentColor : visual.dotColor}
-              className={`${styles.vertex} ${isDragTarget ? styles.vertexSnap : ""}`}
-              pointerEvents="none"
-            />
-          </g>
+          <circle
+            key={vertex.id}
+            cx={vertex.x}
+            cy={vertex.y}
+            r={isHighlighted ? dotRadius * 1.6 : dotRadius}
+            fill={isHighlighted ? currentColor : visual.dotColor}
+            className={`${styles.vertex} ${isHighlighted ? styles.vertexSnap : ""}`}
+            pointerEvents="none"
+          />
         );
       })}
     </svg>
