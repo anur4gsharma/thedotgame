@@ -53,6 +53,15 @@
   animation: shimmer 1s ease-in-out infinite;
 }
 
+.edgeSnap {
+  animation: snapPulse 420ms var(--ease-out) infinite alternate;
+}
+
+@keyframes snapPulse {
+  from { opacity: 0.35; }
+  to { opacity: 0.8; }
+}
+
 @keyframes edgeDraw {
   from {
     stroke-dashoffset: 1;
@@ -65,11 +74,45 @@
 }
 
 .edgeDrawn {
+  stroke-dasharray: 1;
   animation: edgeDraw var(--duration-normal) var(--ease-out) forwards;
   transform-origin: center;
+  transform-box: fill-box;
+}
+
+.dragPreview,
+.dragSnap {
+  stroke-dasharray: 0.08 0.05;
+}
+
+.dragSnap {
+  animation: dragSnap 420ms var(--ease-out) infinite alternate;
+}
+
+@keyframes dragSnap {
+  from { opacity: 0.55; }
+  to { opacity: 0.95; }
+}
+
+.vertexHitArea {
+  cursor: grab;
+}
+
+.vertexHitArea:active {
+  cursor: grabbing;
+}
+
+.vertexSnap {
+  animation: vertexPop 320ms var(--ease-out);
+}
+
+@keyframes vertexPop {
+  0% { transform: scale(0.6); opacity: 0.5; }
+  60% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .board, .cellFill, .edgePending, .edgeDrawn { animation-duration: 120ms !important; animation-iteration-count: 1 !important; }
+  .board, .cellFill, .edgePending, .edgeSnap, .edgeDrawn, .dragSnap, .vertexSnap { animation-duration: 120ms !important; animation-iteration-count: 1 !important; }
   .edge, .vertex { transition-duration: 80ms !important; }
 }

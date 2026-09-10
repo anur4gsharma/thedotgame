@@ -18,10 +18,9 @@ export function BoardRenderer({ board }: BoardRendererProps) {
   const mode = useGameStore((s) => s.mode);
 
   const svgRef = useRef<SVGSVGElement>(null);
-  const dragPreviewRef = useRef<SVGLineElement>(null);
   const [dragVertex, setDragVertex] = useState<string | null>(null);
   const [pointerPos, setPointerPos] = useState<{ x: number; y: number } | null>(null);
-  const [hoverEdge, setHoverEdge] = useState<string | null>(null);
+  const [dragTarget, setDragTarget] = useState<string | null>(null);
 
   const viewBox = useMemo(() => {
     let minX = Infinity, maxX = -Infinity;
@@ -65,7 +64,7 @@ export function BoardRenderer({ board }: BoardRendererProps) {
   }, [board]);
 
   const dotRadius = 0.015 * visual.dotSize;
-  const hitRadius = 0.05;
+  const hitRadius = 0.12;
 
   const commitMove = useCallback(
     (edgeId: string) => {
@@ -131,6 +130,7 @@ export function BoardRenderer({ board }: BoardRendererProps) {
       setDragVertex(vertexId);
       const pos = vertexPos.get(vertexId);
       if (pos) setPointerPos({ x: pos.x, y: pos.y });
+      setDragTarget(null);
     },
     [state, vertexPos],
   );
@@ -141,24 +141,19 @@ export function BoardRenderer({ board }: BoardRendererProps) {
       if (!svgPt) return;
 
       if (dragVertex) {
-        if (dragPreviewRef.current) {
-          dragPreviewRef.current.setAttribute("x2", String(svgPt.x));
-          dragPreviewRef.current.setAttribute("y2", String(svgPt.y));
-        }
-        
-        // Snap preview line to nearest valid vertex
+        setPointerPos(svgPt);
         const target = findClosestVertex(svgPt.x, svgPt.y, dragVertex);
         if (target) {
           const edgeId = findEdge(dragVertex, target);
           if (edgeId) {
             const edgeState = state?.edges.get(edgeId);
             if (!edgeState?.owner) {
-               setHoverEdge((current) => current === edgeId ? current : edgeId);
+               setDragTarget((current) => current === target ? current : target);
                return;
             }
           }
         }
-        setHoverEdge((current) => current === null ? current : null);
+        setDragTarget((current) => current === null ? current : null);
       }
     },
     [dragVertex, toSVGCoords, findClosestVertex, findEdge, state]
@@ -169,13 +164,13 @@ export function BoardRenderer({ board }: BoardRendererProps) {
       if (!dragVertex || !state) {
         setDragVertex(null);
         setPointerPos(null);
-        setHoverEdge(null);
+        setDragTarget(null);
         return;
       }
 
       const svgPt = toSVGCoords(e.clientX, e.clientY);
       if (svgPt) {
-        const target = findClosestVertex(svgPt.x, svgPt.y, dragVertex);
+        const target = dragTarget ?? findClosestVertex(svgPt.x, svgPt.y, dragVertex);
         if (target) {
           const edgeId = findEdge(dragVertex, target);
           if (edgeId) {
@@ -189,15 +184,16 @@ export function BoardRenderer({ board }: BoardRendererProps) {
 
       setDragVertex(null);
       setPointerPos(null);
-      setHoverEdge(null);
+      setDragTarget(null);
     },
-    [dragVertex, state, toSVGCoords, findClosestVertex, findEdge, commitMove],
+    [dragVertex, dragTarget, state, toSVGCoords, findClosestVertex, findEdge, commitMove],
   );
 
   const currentPlayer = state?.players[state?.currentPlayerIndex];
   const canPlay = state?.status === "playing";
   const currentColor = currentPlayer ? visual.playerColors[PLAYER_INDEX[currentPlayer.color]] : visual.turnColor;
   const lastMoveId = state?.moveHistory[state.moveHistory.length - 1]?.edgeId;
+  const dragEdge = dragVertex && dragTarget ? findEdge(dragVertex, dragTarget) : null;
 
   if (!state) return null;
 
@@ -209,7 +205,7 @@ export function BoardRenderer({ board }: BoardRendererProps) {
       preserveAspectRatio="xMidYMid meet"
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
-      onPointerCancel={() => { setDragVertex(null); setPointerPos(null); setHoverEdge(null); }}
+      onPointerCancel={() => { setDragVertex(null); setPointerPos(null); setDragTarget(null); }}
       style={{ touchAction: "none" }}
       role="application"
     >
@@ -256,16 +252,18 @@ export function BoardRenderer({ board }: BoardRendererProps) {
           const edgeState = state.edges.get(edge.id);
           const isClaimed = edgeState?.owner != null;
           const isPending = pendingEdge === edge.id;
-          const isHovered = hoverEdge === edge.id;
+          const isHovered = dragEdge === edge.id;
           const isLastMove = lastMoveId === edge.id;
 
           const owner = isClaimed
             ? state.players.find((p) => p.id === edgeState.owner)
             : null;
 
+          if (!isClaimed && !isPending && !isHovered) return null;
+
           let strokeColor = visual.lineColor;
           let strokeWidth = 0.016;
-          let opacity = isClaimed ? 1 : 0.7;
+          let opacity = isClaimed ? 1 : 0.45;
           let edgeClass = styles.edge;
           
           if (isClaimed && owner) {
@@ -275,26 +273,13 @@ export function BoardRenderer({ board }: BoardRendererProps) {
             }
             edgeClass = `${styles.edge} ${styles.edgeDrawn || ""}`;
           } else if (isPending || isHovered) {
-            strokeColor = isPending ? currentColor : visual.hoverColor;
-            opacity = 0.3;
-            edgeClass = `${styles.edge} ${isPending ? styles.edgePending : ""}`;
+            strokeColor = currentColor;
+            opacity = isPending ? 0.6 : 0.45;
+            edgeClass = `${styles.edge} ${isPending ? styles.edgePending : styles.edgeSnap}`;
           }
 
           return (
             <g key={edge.id}>
-              {!isClaimed && canPlay && (
-                <line
-                  x1={vA.x} y1={vA.y}
-                  x2={vB.x} y2={vB.y}
-                  stroke="transparent"
-                  strokeWidth={0.05}
-                  strokeLinecap="round"
-                  pointerEvents="stroke"
-                  onPointerEnter={() => setHoverEdge(edge.id)}
-                  onPointerLeave={() => setHoverEdge((current) => current === edge.id ? null : current)}
-                  onPointerDown={(event) => { event.preventDefault(); commitMove(edge.id); }}
-                />
-              )}
               <line
                 x1={vA.x} y1={vA.y}
                 x2={vB.x} y2={vB.y}
@@ -303,25 +288,28 @@ export function BoardRenderer({ board }: BoardRendererProps) {
                 opacity={opacity}
                 strokeLinecap="round"
                 className={edgeClass}
+                pathLength={1}
                 pointerEvents="none"
               />
             </g>
           );
         })}
 
-      {/* Drag preview line (freeform fallback) */}
-      {dragVertex && pointerPos && !hoverEdge && (() => {
+      {/* Drag preview: the line snaps to a valid neighbouring dot. */}
+      {dragVertex && pointerPos && (() => {
         const vA = vertexPos.get(dragVertex);
         if (!vA) return null;
+        const vB = dragTarget ? vertexPos.get(dragTarget) : pointerPos;
+        if (!vB) return null;
         return (
           <line
-            ref={dragPreviewRef}
             x1={vA.x} y1={vA.y}
-            x2={pointerPos.x} y2={pointerPos.y}
+            x2={vB.x} y2={vB.y}
             stroke={currentColor}
-            strokeWidth={0.012}
+            strokeWidth={dragTarget ? 0.024 : 0.014}
             strokeLinecap="round"
-            opacity={0.2}
+            opacity={dragTarget ? 0.85 : 0.32}
+            className={dragTarget ? styles.dragSnap : styles.dragPreview}
             pointerEvents="none"
           />
         );
@@ -330,18 +318,27 @@ export function BoardRenderer({ board }: BoardRendererProps) {
       {/* Vertices */}
       {board.vertices.map((vertex) => {
         const isDragSource = dragVertex === vertex.id;
+        const isDragTarget = dragTarget === vertex.id;
 
         return (
-          <circle
-            key={vertex.id}
-            cx={vertex.x}
-            cy={vertex.y}
-            r={isDragSource ? dotRadius * 1.5 : dotRadius}
-            fill={isDragSource ? currentColor : visual.dotColor}
-            className={styles.vertex}
-            onPointerDown={(e) => { if (canPlay) handlePointerDown(vertex.id, e); }}
-            style={{ cursor: "pointer" }}
-          />
+          <g key={vertex.id}>
+            <circle
+              cx={vertex.x}
+              cy={vertex.y}
+              r={Math.max(dotRadius * 3, 0.045)}
+              fill="transparent"
+              className={styles.vertexHitArea}
+              onPointerDown={(e) => { if (canPlay) handlePointerDown(vertex.id, e); }}
+            />
+            <circle
+              cx={vertex.x}
+              cy={vertex.y}
+              r={isDragSource ? dotRadius * 1.5 : isDragTarget ? dotRadius * 1.8 : dotRadius}
+              fill={isDragSource ? currentColor : isDragTarget ? currentColor : visual.dotColor}
+              className={`${styles.vertex} ${isDragTarget ? styles.vertexSnap : ""}`}
+              pointerEvents="none"
+            />
+          </g>
         );
       })}
     </svg>
