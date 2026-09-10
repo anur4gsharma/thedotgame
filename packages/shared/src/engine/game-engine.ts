@@ -76,7 +76,9 @@ export class GameEngine {
       status: "playing",
       players,
       currentPlayerIndex: 0,
-      chancesRemaining: CHANCES_PER_TURN,
+      // The opening player has the standard one move. A timeout grants the
+      // incoming player the two-chance handoff bonus.
+      chancesRemaining: 1,
       edges,
       cells,
       scores,
@@ -232,19 +234,22 @@ export class GameEngine {
     );
     const newStatus = allCellsCompleted ? "completed" : "playing";
 
-    // A turn has two chances. Completing a cell preserves the classic extra
-    // turn rule and starts that player's next turn with two fresh chances.
+    // A normal move hands the turn to the next player. A timeout is the only
+    // way to grant the incoming player two chances; completing a cell still
+    // preserves the classic extra-turn rule.
     const extraTurn = completedCells.length > 0;
-    const nextPlayerIndex = extraTurn || state.chancesRemaining > 1
+    const bonusChance = state.chancesRemaining > 1 && !extraTurn;
+    const nextPlayerIndex = extraTurn || bonusChance
       ? state.currentPlayerIndex
       : (state.currentPlayerIndex + 1) % state.players.length;
     const chancesRemaining = newStatus === "completed"
       ? 0
       : extraTurn
-        ? CHANCES_PER_TURN
-        : state.chancesRemaining > 1
+        ? state.chancesRemaining
+        : bonusChance
           ? state.chancesRemaining - 1
-          : CHANCES_PER_TURN;
+          : 1;
+    const playerChanged = nextPlayerIndex !== state.currentPlayerIndex;
 
     return {
       ...state,
@@ -256,7 +261,11 @@ export class GameEngine {
       scores: newScores,
       moveHistory: newMoveHistory,
       sequenceNumber: state.sequenceNumber + 1,
-      turnDeadline: state.timerMode === 0 ? null : now + state.timerMode * 1000,
+      turnDeadline: newStatus === "completed" || state.timerMode === 0
+        ? null
+        : playerChanged
+          ? now + state.timerMode * 1000
+          : state.turnDeadline,
       completedAt: newStatus === "completed" ? now : null,
     };
   }

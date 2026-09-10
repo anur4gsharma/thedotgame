@@ -35,7 +35,7 @@ describe("RoomManager authoritative flow", () => {
     expect(manager.reconnectPlayer("a", room.code, {} as import("ws").WebSocket)).toEqual({ room: null, player: null, error: "This match has ended. Start a new game." });
   });
 
-  it("keeps three-player chances authoritative across multiple transitions", () => {
+  it("grants the timeout handoff bonus without giving every player two chances", () => {
     const manager = new RoomManager(); const board = generateSquareBoard(3, 3);
     const created = manager.createRoom(board.id, board, "a", "A", 3, "test"); const room = created.room;
     manager.joinRoom(room.code, "b", "B", {} as import("ws").WebSocket);
@@ -51,23 +51,18 @@ describe("RoomManager authoritative flow", () => {
     };
 
     expect(room.gameState?.players[room.gameState.currentPlayerIndex].id).toBe("a");
-    expect(room.gameState?.chancesRemaining).toBe(2);
+    expect(room.gameState?.chancesRemaining).toBe(1);
     const afterA1 = move("h-0-0");
-    expect(afterA1.players[afterA1.currentPlayerIndex].id).toBe("a");
+    expect(afterA1.players[afterA1.currentPlayerIndex].id).toBe("b");
     expect(afterA1.chancesRemaining).toBe(1);
-    expect(manager.makeMove(room.code, "a", "h-0-0", afterA1.sequenceNumber).error).toBe("edge_already_claimed");
-    const afterA2 = move("h-1-0");
-    expect(afterA2.players[afterA2.currentPlayerIndex].id).toBe("b");
-    expect(afterA2.chancesRemaining).toBe(2);
-    const afterB1 = move("h-2-0");
+    const afterB1 = move("h-1-0");
+    expect(afterB1.players[afterB1.currentPlayerIndex].id).toBe("c");
     expect(afterB1.chancesRemaining).toBe(1);
-    const afterB2 = move("h-0-1");
-    expect(afterB2.players[afterB2.currentPlayerIndex].id).toBe("c");
-    expect(afterB2.chancesRemaining).toBe(2);
-    const afterC1 = move("h-1-1");
-    expect(afterC1.chancesRemaining).toBe(1);
-    const afterC2 = move("h-2-1");
-    expect(afterC2.players[afterC2.currentPlayerIndex].id).toBe("a");
-    expect(afterC2.chancesRemaining).toBe(2);
+
+    room.gameState!.turnDeadline = 10_000;
+    const expiry = manager.expireTurn(room.code);
+    expect(expiry.changed).toBe(true);
+    expect(room.gameState?.players[room.gameState.currentPlayerIndex].id).toBe("a");
+    expect(room.gameState?.chancesRemaining).toBe(2);
   });
 });

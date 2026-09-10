@@ -103,7 +103,7 @@ describe("GameEngine - Square Cells", () => {
 
     expect(validation.valid).toBe(false);
     if (!validation.valid) {
-      expect(validation.reason).toBe("edge_already_claimed");
+    expect(validation.reason).toBe("not_your_turn");
     }
   });
 
@@ -218,12 +218,12 @@ describe("GameEngine - Square Cells", () => {
     let state = GameEngine.createGame(board, players);
     state = makeMove(state, board, runtime, "player-1", "h-0-0");
 
-    // The first chance is consumed; the second chance advances the turn.
+    // A normal move advances immediately. Two chances are reserved for a timeout.
+    expect(state.currentPlayerIndex).toBe(1);
+    expect(state.chancesRemaining).toBe(1);
+    state = makeMove(state, board, runtime, "player-2", "h-1-0");
     expect(state.currentPlayerIndex).toBe(0);
     expect(state.chancesRemaining).toBe(1);
-    state = makeMove(state, board, runtime, "player-1", "h-1-0");
-    expect(state.currentPlayerIndex).toBe(1);
-    expect(state.chancesRemaining).toBe(2);
   });
 
   it("should complete two adjacent cells in one move", () => {
@@ -245,10 +245,10 @@ describe("GameEngine - Square Cells", () => {
     // Now claim the shared edge v-1-0 - this should complete BOTH cells
     state = makeMove(state, board, runtime, "player-1", "v-1-0");
 
-    // Both cells should be completed by the player holding the second turn.
-    expect(state.cells.get("c-0-0")!.owner).toBe("player-2");
-    expect(state.cells.get("c-1-0")!.owner).toBe("player-2");
-    expect(state.scores.get("player-2")).toBe(2);
+    // Both cells should be completed by the player holding the current turn.
+    expect(state.cells.get("c-0-0")!.owner).toBe("player-1");
+    expect(state.cells.get("c-1-0")!.owner).toBe("player-1");
+    expect(state.scores.get("player-1")).toBe(2);
   });
 
   it("should update score correctly", () => {
@@ -341,7 +341,7 @@ describe("GameEngine - Square Cells", () => {
     expect(state.moveHistory).toHaveLength(2);
     expect(state.moveHistory[0].playerId).toBe("player-1");
     expect(state.moveHistory[0].edgeId).toBe("h-0-0");
-    expect(state.moveHistory[1].playerId).toBe("player-1");
+    expect(state.moveHistory[1].playerId).toBe("player-2");
     expect(state.moveHistory[1].edgeId).toBe("v-0-0");
   });
 
@@ -434,8 +434,8 @@ describe("GameEngine - Triangular Cells", () => {
       triangleCell!.edgeIds[2],
     );
 
-    expect(state.cells.get(triangleCell!.id)!.owner).toBe("player-2");
-    expect(state.scores.get("player-2")).toBe(1);
+    expect(state.cells.get(triangleCell!.id)!.owner).toBe("player-1");
+    expect(state.scores.get("player-1")).toBe(1);
   });
 
   it("should handle shared edges between triangles", () => {
@@ -667,22 +667,17 @@ describe("GameEngine - Multiplayer", () => {
     const players = createTestPlayers(3);
     let state = GameEngine.createGame(board, players);
 
-    // Player 1 receives two chances.
+    // Normal turns advance one move at a time.
     expect(state.currentPlayerIndex).toBe(0);
     state = makeMove(state, board, runtime, "player-1", "h-0-0");
-    expect(state.currentPlayerIndex).toBe(0);
+    expect(state.currentPlayerIndex).toBe(1);
     expect(state.chancesRemaining).toBe(1);
     state = makeMove(state, board, runtime, "player-2", "h-1-0");
-    expect(state.currentPlayerIndex).toBe(1);
-    expect(state.chancesRemaining).toBe(2);
-    state = makeMove(state, board, runtime, "player-3", "h-2-0");
-    expect(state.currentPlayerIndex).toBe(1);
-    state = makeMove(state, board, runtime, "player-3", "h-0-1");
     expect(state.currentPlayerIndex).toBe(2);
-    state = makeMove(state, board, runtime, "player-1", "h-1-1");
-    state = makeMove(state, board, runtime, "player-1", "h-2-1");
+    expect(state.chancesRemaining).toBe(1);
+    state = makeMove(state, board, runtime, "player-3", "h-2-0");
     expect(state.currentPlayerIndex).toBe(0);
-    expect(state.chancesRemaining).toBe(2);
+    expect(state.chancesRemaining).toBe(1);
   });
 
   it("should keep same player on extra turn", () => {

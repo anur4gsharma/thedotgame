@@ -62,7 +62,7 @@ describe("multi-topology game engine integration", () => {
         // Edge already claimed cannot be claimed again
         expect(GameEngine.isValidMove(state, board, "p1", edge1, state.sequenceNumber)).toEqual({
           valid: false,
-          reason: "edge_already_claimed",
+          reason: "not_your_turn",
         });
 
         // Non-turn player cannot make move

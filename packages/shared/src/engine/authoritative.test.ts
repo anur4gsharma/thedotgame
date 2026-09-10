@@ -12,12 +12,12 @@ describe("authoritative game safety", () => {
     const initial = GameEngine.createGame(board, players);
     const next = GameEngine.applyMove(initial, board, runtime, "a", "h-0-0");
     expect(next.chancesRemaining).toBe(1);
-    expect(GameEngine.isValidMove(next, board, "a", "h-0-0", 0)).toEqual({ valid: false, reason: "edge_already_claimed" });
-    expect(GameEngine.isValidMove(next, board, "b", "v-0-0", 0)).toEqual({ valid: false, reason: "not_your_turn" });
-    const nextTurn = GameEngine.applyMove(next, board, runtime, "a", "v-0-0");
-    expect(nextTurn.currentPlayerIndex).toBe(1);
-    expect(nextTurn.chancesRemaining).toBe(2);
-    expect(GameEngine.isValidMove(nextTurn, board, "b", "v-1-0", nextTurn.sequenceNumber).valid).toBe(true);
+    expect(GameEngine.isValidMove(next, board, "a", "h-0-0", 0)).toEqual({ valid: false, reason: "not_your_turn" });
+    expect(GameEngine.isValidMove(next, board, "b", "v-0-0", 0)).toEqual({ valid: false, reason: "invalid_sequence" });
+    const nextTurn = GameEngine.applyMove(next, board, runtime, "b", "v-0-0");
+    expect(nextTurn.currentPlayerIndex).toBe(0);
+    expect(nextTurn.chancesRemaining).toBe(1);
+    expect(GameEngine.isValidMove(nextTurn, board, "a", "v-1-0", nextTurn.sequenceNumber).valid).toBe(true);
   });
 
   it("expires a turn only at the server deadline and advances exactly once", () => {
@@ -38,7 +38,7 @@ describe("authoritative game safety", () => {
     expect(restored.startedAt).toBe(state.startedAt);
   });
 
-  it("gives each next player exactly two chances across a full turn cycle", () => {
+  it("gives the next player two chances only after a timeout", () => {
     const cycleBoard = generateSquareBoard(3, 3);
     const runtime = buildBoardRuntime(cycleBoard);
     const cyclePlayers = [
@@ -54,28 +54,24 @@ describe("authoritative game safety", () => {
     };
 
     expect(state.players[state.currentPlayerIndex].id).toBe("a");
-    expect(state.chancesRemaining).toBe(2);
+    expect(state.chancesRemaining).toBe(1);
     move("h-0-0");
-    expect(state.players[state.currentPlayerIndex].id).toBe("a");
+    expect(state.players[state.currentPlayerIndex].id).toBe("b");
     expect(state.chancesRemaining).toBe(1);
     move("h-1-0");
-    expect(state.players[state.currentPlayerIndex].id).toBe("b");
-    expect(state.chancesRemaining).toBe(2);
+    expect(state.players[state.currentPlayerIndex].id).toBe("c");
+    expect(state.chancesRemaining).toBe(1);
     move("h-2-0");
-    expect(state.players[state.currentPlayerIndex].id).toBe("b");
-    expect(state.chancesRemaining).toBe(1);
-    move("h-0-1");
-    expect(state.players[state.currentPlayerIndex].id).toBe("c");
-    expect(state.chancesRemaining).toBe(2);
-    move("h-1-1");
-    expect(state.players[state.currentPlayerIndex].id).toBe("c");
-    expect(state.chancesRemaining).toBe(1);
-    move("h-2-1");
     expect(state.players[state.currentPlayerIndex].id).toBe("a");
-    expect(state.chancesRemaining).toBe(2);
+    expect(state.chancesRemaining).toBe(1);
 
-    const restored = GameEngine.deserialize(GameEngine.serialize(state));
-    expect(restored.players[restored.currentPlayerIndex].id).toBe("a");
+    state = GameEngine.startTimer(state, 15, 10_000);
+    const timedOut = GameEngine.expireTurn(state, 25_000);
+    expect(timedOut.players[timedOut.currentPlayerIndex].id).toBe("b");
+    expect(timedOut.chancesRemaining).toBe(2);
+
+    const restored = GameEngine.deserialize(GameEngine.serialize(timedOut));
+    expect(restored.players[restored.currentPlayerIndex].id).toBe("b");
     expect(restored.chancesRemaining).toBe(2);
   });
 });
